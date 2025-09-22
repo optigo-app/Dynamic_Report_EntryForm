@@ -1,0 +1,102 @@
+@import "../../../sass/Variable.scss";
+
+.Customize_Colum_main {
+  display: flex;
+  gap: 15px;
+  padding: 20px 20px 60px 20px;
+  font-family: Arial, sans-serif;
+  flex-wrap: wrap;
+
+  .customize_colum_input {
+    font-family: $fontFamily;
+    .MuiInputBase-input {
+      font-family: $fontFamily !important;
+      padding: 8px;
+      font-size: 15px;
+    }
+    .MuiFormLabel-root {
+      top: -8px;
+    }
+    .MuiFormLabel-root.Mui-focused,
+    .MuiFormLabel-root.MuiFormLabel-filled {
+      top: 2px !important;
+    }
+  }
+
+  .left-form,
+  .right-preview,
+  .final-json-view {
+    flex: 1;
+    min-width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-y: auto;
+    max-height: 90vh;
+    background-color: #fdfdfd;
+  }
+
+  .left-form input,
+  .left-form select {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 6px;
+    font-size: 14px;
+    border: none;
+    margin: 0px;
+  }
+
+  .left-form label {
+    display: block;
+    margin: 5px 0;
+    font-size: 14px;
+  }
+
+  .button-inline {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .preview-item {
+    border: 1px dashed #999;
+    padding: 8px;
+    margin-bottom: 10px;
+    background-color: #fff;
+  }
+
+  .chekbox_title_value {
+    display: flex;
+    align-items: center;
+    // min-width: 200px;
+    font-size: 16px;
+    font-family: $fontFamily;
+  }
+
+  .button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+    width: 100%;
+    justify-content: center;
+
+    .Btn_CustomizeMaster_Model_Cancel {
+      font-family: $fontFamily;
+      background-color: #f03d3d;
+      color: white;
+    }
+    .Btn_Customize_Model_Save {
+      font-family: $fontFamily;
+      background-color: rgb(86, 74, 252);
+      color: white;
+    }
+  }
+
+  .other_title{
+    margin: 10px 0px 5px 0px;
+    font-weight: 600;
+    font-family: $fontFamily;
+    text-decoration: underline;
+  }
+}

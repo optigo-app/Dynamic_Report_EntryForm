@@ -1,0 +1,149 @@
+@import "../../../sass/Variable.scss";
+
+.colum_customize_main {
+  .spList_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-inline: 30px;
+    background-color: rgb(86, 74, 252);
+    height: 60px;
+    .spList_title {
+      font-size: 20px;
+      font-weight: 500;
+      color: white;
+      margin: 0px;
+      font-family: $fontFamily;
+    }
+  }
+
+  .customize_body {
+    padding: 10px 0px;
+    height: 80vh;
+    overflow: auto;
+    width: 60%;
+    &::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent; // keep it clean
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgb(86, 74, 252);
+      border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgb(66, 54, 220);
+    }
+
+    /* 🔹 Firefox */
+    scrollbar-width: thin; /* makes it thinner */
+    scrollbar-color: rgb(86, 74, 252) transparent;
+
+    .sp_subtitle {
+      margin-bottom: 15px;
+      font-family: $fontFamily;
+      font-weight: 500;
+      color: #444;
+    }
+
+    .column_list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 25px;
+
+      .column_row {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: #fafafa;
+
+        .column_label {
+          flex: 1;
+          font-size: 15px;
+          color: #333;
+          font-family: $fontFamily;
+        }
+      }
+    }
+
+    .Btn_Customize {
+      font-family: $fontFamily;
+    }
+
+    .Btn_saveColumList {
+      font-family: $fontFamily;
+    }
+  }
+
+  .save_section {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    align-items: center;
+  }
+
+  .showList_LargeMain {
+    width: 40%;
+    margin: 10px 10px 0px 10px;
+    .LargeData_Report {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid lightgray;
+      margin-bottom: 15px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      .column_label {
+        font-family: $fontFamily;
+      }
+
+      .descLine_showColum {
+        font-family: $fontFamily;
+      }
+
+      .largest_columns_group {
+        font-family: $fontFamily;
+        height: 70vh;
+        overflow: auto;
+        .column_label {
+          font-family: $fontFamily;
+        }
+
+        &::-webkit-scrollbar {
+          width: 3px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: transparent; // keep it clean
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: rgb(86, 74, 252);
+          border-radius: 10px;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+          background: rgb(66, 54, 220);
+        }
+
+        /* 🔹 Firefox */
+        scrollbar-width: thin; /* makes it thinner */
+        scrollbar-color: rgb(86, 74, 252) transparent;
+      }
+
+      .Btn_saveColumList {
+        font-family: $fontFamily;
+      }
+    }
+  }
+}
+
+.customize_model_title {
+  font-family: $fontFamily !important;
+}
