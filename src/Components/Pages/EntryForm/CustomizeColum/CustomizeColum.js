@@ -42,13 +42,14 @@ const defaultField = {
   DefaultGrupChekBox: false,
   ActionFilter: false,
   CopyButton: false,
+  HideColumn: false,
   ActionMasterName: "",
   DateTimeFrame: 0,
 };
 
 const defaultFieldFilter = {
   NormalFilter: false,
-  DateRangeFilter: false,
+  // DateRangeFilter: false,
   MultiSelection: false,
   RangeFilter: false,
   SuggestionFilter: false,
@@ -83,7 +84,7 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
       setFormData({ ...defaultField, ReportId: spId });
     }
   }, [selectedColumn, spId, sessionKey]);
-
+  console.log("formDataformData", formData);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -132,6 +133,7 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
       IsLargeDataGroup: formData.IsLargeDataGroup ? 1 : 0,
       DateTimeFrame: formData.DateTimeFrame || 0,
       FriendlyName: formData.FriendlyName || "",
+      HideColumn: formData.HideColumn ? 1 : 0,
       ColumnDecimal: formData.ColumnDecimal
         ? Number(formData.ColumnDecimal)
         : null, // ✅ Fix
@@ -191,24 +193,26 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
         "FontColor",
         "BorderRadius",
         "FriendlyName",
-        "ColumnDecimal",
-      ].map((field) => (
-        <TextField
-          key={field}
-          name={field}
-          variant="outlined"
-          label={field}
-          value={formData[field] || ""}
-          onChange={handleInputChange}
-          style={{ width: "47.5%" }}
-          className="customize_colum_input"
-          InputLabelProps={{
-            style: {
-              fontFamily: "Poppins, sans-serif",
-            },
-          }}
-        />
-      ))}
+        formData?.ColumnType === "Number" && "ColumnDecimal",
+      ]
+        .filter(Boolean) 
+        .map((field) => (
+          <TextField
+            key={field}
+            name={field}
+            variant="outlined"
+            label={field}
+            value={formData[field] || ""}
+            onChange={handleInputChange}
+            style={{ width: "47.5%" }}
+            className="customize_colum_input"
+            InputLabelProps={{
+              style: {
+                fontFamily: "Poppins, sans-serif",
+              },
+            }}
+          />
+        ))}
 
       <div
         style={{

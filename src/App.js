@@ -9,7 +9,7 @@ function AppWrapper() {
   return (
     <RecoilRoot>
       <DeviceStatusProvider>
-        <BrowserRouter >
+        <BrowserRouter basename="/dynamicreportform">
           <App />
         </BrowserRouter>
       </DeviceStatusProvider>

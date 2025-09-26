@@ -41,14 +41,16 @@ const AddSpColum = () => {
   const [columns, setColumns] = useState(
     existingSp?.result || [
       {
-        fieldName: "",
-        headerName: "",
+        FieldName: "",
+        HeaderName: "",
         regex: "",
-        dataType: "",
+        ColumnType: "",
         master: "",
       },
     ]
   );
+
+  console.log("columnscolumns", columns);
 
   useEffect(() => {
     const fetchMasterOptions = async () => {
@@ -93,16 +95,10 @@ const AddSpColum = () => {
         }
         if (response?.rd1 && response.rd1.length > 0) {
           const mappedCols = response.rd1.map((col) => {
-            const match = masterOptions.find(
-              (opt) => opt.Id == col.MasterId
-            );
+            const match = masterOptions.find((opt) => opt.Id == col.MasterId);
             return {
-              fieldName: col.FieldName || "",
-              headerName: col.HeaderName || "",
-              regex: col.Regex || "",
-              dataType: col.ColumnType || "",
+              ...col,
               master: match ? match.Id : "",
-              width: col.Width || 150,
             };
           });
           setColumns(mappedCols);
@@ -120,24 +116,24 @@ const AddSpColum = () => {
     setColumns([
       ...columns,
       {
-        fieldName: "",
-        headerName: "",
+        FieldName: "",
+        HeaderName: "",
         regex: "",
-        dataType: "",
+        ColumnType: "",
         master: "",
       },
     ]);
-    setErrors([...errors, { fieldName: false, headerName: false }]);
+    setErrors([...errors, { FieldName: false, HeaderName: false }]);
   };
 
   const handleColumnChange = (index, field, value) => {
     const updatedColumns = [...columns];
     if (!updatedColumns[index]) {
       updatedColumns[index] = {
-        fieldName: "",
-        headerName: "",
+        FieldName: "",
+        HeaderName: "",
         regex: "",
-        dataType: "",
+        ColumnType: "",
         master: "",
       };
     }
@@ -149,7 +145,7 @@ const AddSpColum = () => {
       updatedErrors[index] = {};
     }
     if (
-      (field === "fieldName" || field === "headerName") &&
+      (field === "FieldName" || field === "HeaderName") &&
       value.trim() !== ""
     ) {
       updatedErrors[index][field] = false;
@@ -169,25 +165,25 @@ const AddSpColum = () => {
     }
 
     const validationResults = columns.map((col) => ({
-      fieldName: col.fieldName.trim() === "",
-      headerName: col.headerName.trim() === "",
+      FieldName: col.FieldName.trim() === "",
+      HeaderName: col.HeaderName.trim() === "",
     }));
     setErrors(validationResults);
     const hasErrors = validationResults.some(
-      (err) => err.fieldName || err.headerName
+      (err) => err.FieldName || err.HeaderName
     );
     if (hasErrors) {
       return;
     }
 
     const result = columns.map((col, index) => ({
-      Id: index + 1,
-      FieldName: col.fieldName,
-      HeaderName: col.headerName,
+      ...col,
+      FieldName: col.FieldName,
+      HeaderName: col.HeaderName,
       Regex: col.regex,
-      ColumnType: col.dataType,
+      ColumnType: col.ColumnType,
       MasterId: col.master,
-      Width: col.width || 150,
+      Width: col.width || "",
       IsFilterable: 1,
       IsVisible: 1,
     }));
@@ -212,10 +208,10 @@ const AddSpColum = () => {
         setSpDescription("");
         setColumns([
           {
-            fieldName: "",
-            headerName: "",
+            FieldName: "",
+            HeaderName: "",
             regex: "",
-            dataType: "",
+            ColumnType: "",
             master: "",
           },
         ]);
@@ -366,30 +362,30 @@ const AddSpColum = () => {
             <Grid item xs={12} sm={4} md={2}>
               <TextField
                 label="Field Name"
-                value={col.fieldName}
+                value={col.FieldName}
                 onChange={(e) =>
-                  handleColumnChange(index, "fieldName", e.target.value)
+                  handleColumnChange(index, "FieldName", e.target.value)
                 }
                 fullWidth
                 size="small"
-                error={errors[index]?.fieldName}
+                error={errors[index]?.FieldName}
                 helperText={
-                  errors[index]?.fieldName ? "Field Name is required" : ""
+                  errors[index]?.FieldName ? "Field Name is required" : ""
                 }
               />
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
               <TextField
                 label="Header Name"
-                value={col.headerName}
+                value={col.HeaderName}
                 onChange={(e) =>
-                  handleColumnChange(index, "headerName", e.target.value)
+                  handleColumnChange(index, "HeaderName", e.target.value)
                 }
                 fullWidth
                 size="small"
-                error={errors[index]?.headerName}
+                error={errors[index]?.HeaderName}
                 helperText={
-                  errors[index]?.headerName ? "Header Name is required" : ""
+                  errors[index]?.HeaderName ? "Header Name is required" : ""
                 }
               />
             </Grid>
@@ -408,10 +404,10 @@ const AddSpColum = () => {
               <FormControl fullWidth size="small" style={{ width: "200px" }}>
                 <InputLabel>Select Type</InputLabel>
                 <Select
-                  value={col.dataType}
+                  value={col.ColumnType}
                   label="Select Type"
                   onChange={(e) =>
-                    handleColumnChange(index, "dataType", e.target.value)
+                    handleColumnChange(index, "ColumnType", e.target.value)
                   }
                 >
                   <MenuItem value="String">String</MenuItem>

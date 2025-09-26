@@ -417,36 +417,6 @@ const ShowColumnList = () => {
             ) : null}
           </DialogContent>
         </Drawer>
-        {/* 
-        <Dialog
-          open={editorOpen}
-          onClose={closeEditor}
-          fullWidth
-          maxWidth={activeItem?.kind === "master" ? "xs" : "xl"}
-          keepMounted
-        >
-          <DialogTitle className="customize_model_title">
-            {activeItem?.kind === "master"
-              ? "Customize: Report Options"
-              : `Customize: ${activeItem?.title || ""}`}
-          </DialogTitle>
-          <DialogContent dividers>
-            {activeItem?.kind === "master" ? (
-              <CustomizeMaster
-                initialData={spData.master}
-                spId={activeItem.spId}
-                onClose={closeEditor}
-              />
-            ) : activeItem?.kind === "column" ? (
-              <CustomizeColum
-                selectedColumn={activeItem.initialData}
-                spId={activeItem.spId}
-                onClose={closeEditor}
-              />
-            ) : null}
-          </DialogContent>
-        </Dialog> */}
-
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={1200}

@@ -22,28 +22,31 @@
     flex-direction: column;
     align-items: center;
     height: 85vh;
-    overflow: auto;
 
-    &::-webkit-scrollbar {
-      width: 3px;
+    .Sp_list_flexView {
+      height: 70vh;
+      overflow: auto;
+      &::-webkit-scrollbar {
+        width: 3px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent; // keep it clean
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: rgb(86, 74, 252);
+        border-radius: 10px;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background: rgb(66, 54, 220);
+      }
+
+      /* 🔹 Firefox */
+      scrollbar-width: thin; /* makes it thinner */
+      scrollbar-color: rgb(86, 74, 252) transparent;
     }
-
-    &::-webkit-scrollbar-track {
-      background: transparent; // keep it clean
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: rgb(86, 74, 252);
-      border-radius: 10px;
-    }
-
-    &::-webkit-scrollbar-thumb:hover {
-      background: rgb(66, 54, 220);
-    }
-
-    /* 🔹 Firefox */
-    scrollbar-width: thin; /* makes it thinner */
-    scrollbar-color: rgb(86, 74, 252) transparent;
 
     .Sp_list_singleView {
       // box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 50px;
