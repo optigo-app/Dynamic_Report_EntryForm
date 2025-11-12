@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import "./SpList.scss";
-import { CirclePlus } from "lucide-react";
-import { Button, IconButton } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { CirclePlus, Search, X } from "lucide-react";
+import { Button, IconButton, InputAdornment, TextField } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CallApi } from "../../../../API/CallApi/CallApi";
 import LoadingBackdrop from "../../../../Utils/LoadingBackdrop";
 
@@ -12,11 +12,14 @@ const SpList = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [spList, setSpList] = useState([]);
+  const [search, setSearch] = useState("");
+  const location = useLocation();
 
   const getSpData = async () => {
     setLoading(true);
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
     const body = {
-      con: '{"id": "", "mode": "getSpList", "appuserid": "testuser"}',
+      con: `{"id": "", "mode": "getSpList", "appuserid": "${AllData?.LUId}"}`,
       p: "{}",
       f: "DynamicReport ( get sp list )",
     };
@@ -30,6 +33,14 @@ const SpList = () => {
   useEffect(() => {
     getSpData();
   }, []);
+
+  const filteredSpList = spList?.filter((sp) => {
+    const query = search.toLowerCase();
+    return (
+      sp.ReportName?.toLowerCase().includes(query) ||
+      sp.ReportDescription?.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="SP_list_main">
@@ -56,13 +67,47 @@ const SpList = () => {
               <div style={{ width: "100%" }}>
                 <Button
                   className="Sp_list_ADD_REPORT"
-                  onClick={() => navigate("/AddSpColum")}
+                  onClick={() => navigate(`/AddSpColum${location.search}`)}
                 >
                   <CirclePlus style={{ color: "rgb(86, 74, 252)" }} />
                   <p>ADD SP</p>
                 </Button>
+                <div style={{ marginBottom: "10px" }}>
+                  <TextField
+                    type="text"
+                    placeholder="Search..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search size={18} color="#888" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: search ? (
+                        <InputAdornment position="end">
+                          <IconButton
+                            edge="end"
+                            size="small"
+                            onClick={() => setSearch("")}
+                            aria-label="clear"
+                          >
+                            <X size={18} color="#888" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null,
+                    }}
+                    sx={{
+                      width: "350px",
+                      "& .MuiInputBase-input": {
+                        padding: "6px 8px !important",
+                      },
+                    }}
+                    className="txt_commonSearch"
+                  />
+                </div>
                 <div className="Sp_list_flexView">
-                  {spList?.map((sp) => (
+                  {filteredSpList?.map((sp) => (
                     <div key={sp.id} className="Sp_list_singleView">
                       <div
                         style={{
@@ -89,7 +134,9 @@ const SpList = () => {
                               }
                             }
                             sessionStorage.removeItem("masterSetting");
-                            navigate("/ShowColumnList", { state: sp });
+                            navigate(`/ShowColumnList${location.search}`, {
+                              state: sp,
+                            });
                           }}
                           className="Btn_EditSp"
                         >
@@ -100,7 +147,9 @@ const SpList = () => {
                           variant="outlined"
                           size="small"
                           onClick={() =>
-                            navigate("/AddSpColum", { state: { sp } })
+                            navigate(`/AddSpColum${location.search}`, {
+                              state: { sp },
+                            })
                           }
                           className="Btn_AddColumn"
                         >

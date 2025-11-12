@@ -18,7 +18,7 @@
   }
 
   .customize_body {
-    padding: 10px 0px;
+    padding: 10px;
     height: 80vh;
     overflow: auto;
     width: 60%;
@@ -92,6 +92,7 @@
   .showList_LargeMain {
     width: 40%;
     margin: 10px 10px 0px 10px;
+
     .LargeData_Report {
       display: flex;
       flex-direction: column;
@@ -99,6 +100,8 @@
       margin-bottom: 15px;
       padding: 8px 12px;
       border-radius: 6px;
+      height: 40vh;
+      overflow: auto;
       .column_label {
         font-family: $fontFamily;
       }
@@ -109,7 +112,115 @@
 
       .largest_columns_group {
         font-family: $fontFamily;
-        height: 70vh;
+        overflow: auto;
+        .column_label {
+          font-family: $fontFamily;
+        }
+
+        &::-webkit-scrollbar {
+          width: 3px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: transparent; // keep it clean
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: rgb(86, 74, 252);
+          border-radius: 10px;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+          background: rgb(66, 54, 220);
+        }
+
+        /* 🔹 Firefox */
+        scrollbar-width: thin; /* makes it thinner */
+        scrollbar-color: rgb(86, 74, 252) transparent;
+      }
+
+      .Btn_saveColumList {
+        font-family: $fontFamily;
+      }
+    }
+
+    .spliterReport_allView {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid lightgray;
+      margin-bottom: 15px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      height: 72vh;
+
+      .spliter_optionshow {
+        display: flex;
+        gap: 100px;
+        height: 230px;
+        overflow: auto;
+      }
+
+      .column_label {
+        font-family: $fontFamily;
+      }
+
+      .descLine_showColum {
+        font-family: $fontFamily;
+      }
+
+      .largest_columns_group {
+        font-family: $fontFamily;
+        overflow: auto;
+        .column_label {
+          font-family: $fontFamily;
+        }
+
+        &::-webkit-scrollbar {
+          width: 3px;
+        }
+
+        &::-webkit-scrollbar-track {
+          background: transparent; // keep it clean
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: rgb(86, 74, 252);
+          border-radius: 10px;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+          background: rgb(66, 54, 220);
+        }
+
+        /* 🔹 Firefox */
+        scrollbar-width: thin; /* makes it thinner */
+        scrollbar-color: rgb(86, 74, 252) transparent;
+      }
+
+      .Btn_saveColumList {
+        font-family: $fontFamily;
+      }
+    }
+
+    .LargeData_Report_DateSection {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid lightgray;
+      margin-bottom: 15px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      height: 34vh;
+      overflow: auto;
+      .column_label {
+        font-family: $fontFamily;
+      }
+
+      .descLine_showColum {
+        font-family: $fontFamily;
+      }
+
+      .largest_columns_group {
+        font-family: $fontFamily;
         overflow: auto;
         .column_label {
           font-family: $fontFamily;

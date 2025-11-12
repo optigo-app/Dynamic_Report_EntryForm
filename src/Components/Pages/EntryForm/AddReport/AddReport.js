@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "./AddSpColum.scss";
+import "./AddReport.scss";
 import {
   Button,
   FormControl,
@@ -18,7 +18,7 @@ import { ArrowLeftFromLine, CirclePlus, Trash2 } from "lucide-react";
 import { CallApi } from "../../../../API/CallApi/CallApi";
 import LoadingBackdrop from "../../../../Utils/LoadingBackdrop";
 
-const AddSpColum = () => {
+const AddReport = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
@@ -49,8 +49,6 @@ const AddSpColum = () => {
       },
     ]
   );
-
-  console.log("columnscolumns", columns);
 
   useEffect(() => {
     const fetchMasterOptions = async () => {
@@ -87,7 +85,6 @@ const AddSpColum = () => {
       };
       try {
         const response = await CallApi(body);
-        setLoading(false);
         if (response?.rd && response?.rd.length > 0) {
           setReportName(response.rd[0].ReportName || "");
           setSpName(response.rd[0].SpNameR || "");
@@ -103,6 +100,7 @@ const AddSpColum = () => {
           });
           setColumns(mappedCols);
         }
+        setLoading(false);
       } catch (error) {
         console.error("getEditColumData failed:", error);
       }
@@ -227,7 +225,7 @@ const AddSpColum = () => {
 
       setOpenSnackbar(true);
       setTimeout(() => {
-        navigate("/");
+        navigate(`/${location.search}`);
       }, 1200);
     } catch (error) {
       console.error("Save API failed:", error);
@@ -245,16 +243,34 @@ const AddSpColum = () => {
   };
 
   return (
-    <div className="add_sp_columdata">
+    <div className="add_report_columdata">
       <LoadingBackdrop isLoading={loading} />
       <div className="spList_header">
         <Typography variant="h6" className="spList_title">
-          Enter SP Details
+          Enter Report Details
         </Typography>
-        <IconButton onClick={() => navigate("/")}>
+        <IconButton onClick={() => navigate(`/${location.search}`)}>
           <ArrowLeftFromLine style={{ color: "white" }} />
         </IconButton>
       </div>
+
+      <Grid item xs={6} sm={3} md={2} sx={{ m: 3 }}>
+        <FormControl fullWidth size="small" style={{ width: "200px" }}>
+          <InputLabel>Select SP</InputLabel>
+          <Select
+            label="Select Type"
+            onChange={(e) =>
+              handleColumnChange(0, "ColumnType", e.target.value)
+            }
+          >
+            <MenuItem value="DynamicReport1">DynamicReport1</MenuItem>
+            <MenuItem value="DynamicReport2">DynamicReport2</MenuItem>
+            <MenuItem value="DynamicReport3">DynamicReport3</MenuItem>
+            <MenuItem value="DynamicReport4">DynamicReport4</MenuItem>
+            <MenuItem value="DynamicReport5">DynamicReport5</MenuItem>
+          </Select>
+        </FormControl>
+      </Grid>
 
       <Grid container spacing={2} sx={{ m: 3 }}>
         <Grid item xs={12} md={6}>
@@ -268,7 +284,7 @@ const AddSpColum = () => {
             helperText={formErrors.ReportName ? "Report Name is required" : ""}
           />
         </Grid>
-        <Grid item xs={12} md={6}>
+        {/* <Grid item xs={12} md={6}>
           <TextField
             label="Sp Name"
             value={spName}
@@ -291,7 +307,7 @@ const AddSpColum = () => {
               formErrors.spDescription ? "SP Description is required" : ""
             }
           />
-        </Grid>
+        </Grid> */}
         {/* <Grid item xs={12} md={6} style={{ width: "200px" }}>
           <FormControl fullWidth size="small" error={formErrors.appName}>
             <InputLabel>App Name</InputLabel>
@@ -492,4 +508,4 @@ const AddSpColum = () => {
   );
 };
 
-export default AddSpColum;
+export default AddReport;

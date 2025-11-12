@@ -40,9 +40,11 @@ const defaultField = {
   ColumnDecimal: "",
   GrupChekBox: false,
   DefaultGrupChekBox: false,
+  GroupColumnImageView: false,
   ActionFilter: false,
   CopyButton: false,
   HideColumn: false,
+  ImageColumn: false,
   ActionMasterName: "",
   DateTimeFrame: 0,
 };
@@ -54,6 +56,7 @@ const defaultFieldFilter = {
   RangeFilter: false,
   SuggestionFilter: false,
   SelectDropdownFilter: false,
+  ServerSideFilter: false,
 };
 
 const defaultFieldSummury = {
@@ -134,6 +137,8 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
       DateTimeFrame: formData.DateTimeFrame || 0,
       FriendlyName: formData.FriendlyName || "",
       HideColumn: formData.HideColumn ? 1 : 0,
+      ImageColumn: formData.ImageColumn ? 1 : 0,
+      GroupColumnImageView: formData.GroupColumnImageView ? 1 : 0,
       ColumnDecimal: formData.ColumnDecimal
         ? Number(formData.ColumnDecimal)
         : null, // ✅ Fix
@@ -146,6 +151,7 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
       RangeFilter: formData.RangeFilter ? 1 : 0,
       SuggestionFilter: formData.SuggestionFilter ? 1 : 0,
       SelectDropdownFilter: formData.SelectDropdownFilter ? 1 : 0,
+      ServerSideFilter: formData.ServerSideFilter ? 1 : 0,
     };
 
     const summaryPayload = {

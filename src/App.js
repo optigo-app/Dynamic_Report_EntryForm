@@ -6,10 +6,17 @@ import { DeviceStatusProvider } from "./DeviceStatusContext";
 import { ToastContainer } from "./Utils/Tostify/ToastManager";
 
 function AppWrapper() {
+  
+  function getBaseName() {
+    const path = window.location.pathname;
+    const match = path.match(/^\/([^/]+\/[^/]+)/);
+    return match ? `/${match[1]}` : "/";
+  }
+
   return (
     <RecoilRoot>
       <DeviceStatusProvider>
-        <BrowserRouter basename="/dynamicreportform">
+        <BrowserRouter basename={getBaseName()}>
           <App />
         </BrowserRouter>
       </DeviceStatusProvider>
