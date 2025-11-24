@@ -89,14 +89,23 @@ const GridMain = () => {
   }, [pid, CN]);
 
   const renderComponent = () => {
-    return (
-      <>
-        <Route path="/" element={<SpList />} />
-        <Route path="/AddSpColum" element={<AddSpColum />} />
-        <Route path="/ShowColumnList" element={<ShowColumnList />} />
-        <Route path="/CustomizeColum" element={<CustomizeColum />} />
-      </>
-    );
+    if (pid === "18363") {
+      return (
+        <>
+          <Route path="/" element={<SpList />} />.
+          <Route path="/AddSpColum" element={<AddSpColum />} />
+        </>
+      );
+    } else {
+      return (
+        <>
+          <Route path="/" element={<ReportList />} />
+          <Route path="/AddReport" element={<AddReport />} />
+          <Route path="/ShowColumnList" element={<ShowColumnList />} />
+          <Route path="/CustomizeColum" element={<CustomizeColum />} />
+        </>
+      );
+    }
   };
 
   if (tokenMissing) {
@@ -144,6 +153,9 @@ const GridMain = () => {
 };
 
 export default GridMain;
+
+
+
 
 // // http://localhost:3000/?CN=UkRTRF8yMDI1MTAwNzA0MDgyNF9kZGFmNzIwOGQ4MzY0ODE0YmZiNDE3MDkyNzg0YTdiMQ==&pid=18333
 
@@ -236,23 +248,14 @@ export default GridMain;
 //   }, [pid, CN]);
 
 //   const renderComponent = () => {
-//     if (pid === "18363") {
-//       return (
-//         <>
-//           <Route path="/" element={<SpList />} />.
-//           <Route path="/AddSpColum" element={<AddSpColum />} />
-//         </>
-//       );
-//     } else {
-//       return (
-//         <>
-//           <Route path="/" element={<ReportList />} />
-//           <Route path="/AddReport" element={<AddReport />} />
-//           <Route path="/ShowColumnList" element={<ShowColumnList />} />
-//           <Route path="/CustomizeColum" element={<CustomizeColum />} />
-//         </>
-//       );
-//     }
+//     return (
+//       <>
+//         <Route path="/" element={<SpList />} />
+//         <Route path="/AddSpColum" element={<AddSpColum />} />
+//         <Route path="/ShowColumnList" element={<ShowColumnList />} />
+//         <Route path="/CustomizeColum" element={<CustomizeColum />} />
+//       </>
+//     );
 //   };
 
 //   if (tokenMissing) {

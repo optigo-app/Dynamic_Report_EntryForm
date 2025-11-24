@@ -29,6 +29,8 @@ const defaultField = {
   // DateColumn: false,
   DisplayOrder: "",
   FontSize: 10,
+  DefaultSort: "normall",
+  TwoColumnData: "Select",
   BackgroundColor: "",
   FontColor: "",
   BorderRadius: "",
@@ -45,6 +47,8 @@ const defaultField = {
   CopyButton: false,
   HideColumn: false,
   ImageColumn: false,
+  IsPriorityColumn: false,
+  PriorityColorColumn: false,
   ActionMasterName: "",
   DateTimeFrame: 0,
 };
@@ -69,7 +73,7 @@ const defaultFieldNavigate = {
   OnHyperlinkLinkModel: false,
 };
 
-const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
+const CustomizeColum = ({ selectedColumn, spId, onClose, allColumData }) => {
   const [formData, setFormData] = useState({ ...defaultField });
   const sessionKey = `columnSettings_${spId}_${selectedColumn?.__original?.ColId}`;
   useEffect(() => {
@@ -87,7 +91,8 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
       setFormData({ ...defaultField, ReportId: spId });
     }
   }, [selectedColumn, spId, sessionKey]);
-  console.log("formDataformData", formData);
+  console.log("allColumdata", allColumData);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -125,12 +130,16 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
       // DateColumn: formData.DateColumn ? 1 : 0,
       DisplayOrder: Number(formData.DisplayOrder) || null,
       FontSize: parseInt(formData.FontSize) || 12,
+      DefaultSort: formData.DefaultSort || "normall",
+      TwoColumnData: formData.TwoColumnData || "Select",
       BackgroundColor: formData.BackgroundColor,
       FontColor: formData.FontColor,
       BorderRadius: Number(formData.BorderRadius) || 0,
       CopyButton: formData.CopyButton ? 1 : 0,
       GrupChekBox: formData.GrupChekBox ? 1 : 0,
       DefaultGrupChekBox: formData.DefaultGrupChekBox ? 1 : 0,
+      IsPriorityColumn: formData.IsPriorityColumn ? 1 : 0,
+      PriorityColorColumn: formData.PriorityColorColumn ? 1 : 0,
       ActionFilter: formData.ActionFilter ? 1 : 0,
       ActionMasterName: formData.ActionMasterName,
       IsLargeDataGroup: formData.IsLargeDataGroup ? 1 : 0,
@@ -201,7 +210,7 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
         "FriendlyName",
         formData?.ColumnType === "Number" && "ColumnDecimal",
       ]
-        .filter(Boolean) 
+        .filter(Boolean)
         .map((field) => (
           <TextField
             key={field}
@@ -321,9 +330,74 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
             <MenuItem value="16">16</MenuItem>
           </Select>
         </FormControl>
+
+        <FormControl style={{ width: "20%" }} size="small">
+          <InputLabel
+            style={{
+              fontFamily: "Poppins, sans-serif",
+            }}
+          >
+            Default Sorting
+          </InputLabel>
+          <Select
+            label="Default Sorting"
+            name="DefaultSort"
+            value={formData.DefaultSort}
+            onChange={handleInputChange}
+            style={{
+              height: 40,
+              fontSize: 16,
+            }}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 200,
+                },
+              },
+            }}
+          >
+            <MenuItem value="normall">-sort-</MenuItem>
+            <MenuItem value="ascending">Ascending Order</MenuItem>
+            <MenuItem value="descending">Descending Order</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl style={{ width: "20%" }} size="small">
+          <InputLabel
+            style={{
+              fontFamily: "Poppins, sans-serif",
+            }}
+          >
+            Two ColumnData
+          </InputLabel>
+          <Select
+            label="Two ColumnData"
+            name="TwoColumnData"
+            value={formData.TwoColumnData}
+            onChange={handleInputChange}
+            style={{
+              height: 40,
+              fontSize: 16,
+            }}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 200,
+                },
+              },
+            }}
+          >
+            <MenuItem value="Select">-Select-</MenuItem>
+            {allColumData?.map((data, index) => (
+              <MenuItem value={data?.FieldName} key={index}>
+                {data?.FieldName}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </div>
 
-      <div style={{ display: "flex", gap: "30px" }}>
+      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
         {Object.keys(defaultField)
           .filter((key) => typeof defaultField[key] === "boolean")
           .map((key) => (
@@ -333,7 +407,7 @@ const CustomizeColum = ({ selectedColumn, spId, onClose }) => {
                 display: "flex",
                 alignItems: "center",
                 padding: "5px 0",
-                gap: "10px",
+                gap: "4px",
               }}
             >
               <span className="chekbox_title_value">{key}</span>

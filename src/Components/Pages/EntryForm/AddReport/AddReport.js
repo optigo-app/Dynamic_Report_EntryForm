@@ -14,174 +14,170 @@ import {
   Alert,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeftFromLine, CirclePlus, Trash2 } from "lucide-react";
+import { ArrowLeftFromLine } from "lucide-react";
 import { CallApi } from "../../../../API/CallApi/CallApi";
 import LoadingBackdrop from "../../../../Utils/LoadingBackdrop";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const AddReport = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const existingSp = location.state?.sp;
-  const [errors, setErrors] = useState([]);
+
   const [formErrors, setFormErrors] = useState({
     ReportName: false,
-    spName: false,
     spDescription: false,
-    appName: false,
-    menuName: false,
   });
+
   const [reportName, setReportName] = useState(existingSp?.ReportName || "");
   const [spName, setSpName] = useState(existingSp?.SpNameR || "");
-  const [masterOptions, setMasterOptions] = useState([]);
   const [spDescription, setSpDescription] = useState(
     existingSp?.ReportDescription || ""
   );
 
-  const [columns, setColumns] = useState(
-    existingSp?.result || [
-      {
-        FieldName: "",
-        HeaderName: "",
-        regex: "",
-        ColumnType: "",
-        master: "",
-      },
-    ]
-  );
+  const [spListData, setSpListData] = useState([]);
+  const [selectedSp, setSelectedSp] = useState(existingSp?.SpNameR || "");
+  const [availableColumns, setAvailableColumns] = useState([]);
+  const [selectedColumns, setSelectedColumns] = useState([]);
 
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+
+  // 🔹 Get SP list
   useEffect(() => {
-    const fetchMasterOptions = async () => {
+    const fetchSpList = async () => {
       setLoading(true);
-      const body = {
-        con: JSON.stringify({ id: "", mode: "getMasterTableList" }),
+      const bodySpList = {
+        con: JSON.stringify({ id: "", mode: "getSpNameList" }),
         p: "{}",
         f: "DynamicReport ( get sp list )",
       };
 
       try {
-        const response = await CallApi(body);
+        const response = await CallApi(bodySpList);
         if (response?.rd && Array.isArray(response.rd)) {
-          setMasterOptions(response.rd);
-          setLoading(false);
+          setSpListData(response.rd);
         }
       } catch (error) {
-        console.error("Failed to fetch master options:", error);
+        console.error("Failed to fetch SP list:", error);
+      } finally {
+        setLoading(false);
       }
     };
-
-    fetchMasterOptions();
+    fetchSpList();
   }, []);
 
+  // 🔹 Fetch SP columns
   useEffect(() => {
-    if (!existingSp?.ReportId || masterOptions.length === 0) return;
-    const getEditColumData = async () => {
-      const body = {
-        con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
-        p: JSON.stringify({
-          ReportId: existingSp?.ReportId || 0,
-        }),
-        f: "DynamicReport ( get colum data )",
+    if (!selectedSp) return;
+
+    const fetchSpColum = async () => {
+      setLoading(true);
+      const bodySpList = {
+        con: JSON.stringify({ id: "", mode: "getSpFieldList" }),
+        p: JSON.stringify({ Sp_Name: selectedSp }),
+        f: "DynamicReport ( get selected sp columns )",
       };
+
       try {
-        const response = await CallApi(body);
-        if (response?.rd && response?.rd.length > 0) {
-          setReportName(response.rd[0].ReportName || "");
-          setSpName(response.rd[0].SpNameR || "");
-          setSpDescription(response.rd[0].ReportDescription || "");
-        }
-        if (response?.rd1 && response.rd1.length > 0) {
-          const mappedCols = response.rd1.map((col) => {
-            const match = masterOptions.find((opt) => opt.Id == col.MasterId);
-            return {
-              ...col,
-              master: match ? match.Id : "",
+        const response = await CallApi(bodySpList);
+        if (response?.rd && Array.isArray(response.rd)) {
+          let cols = response.rd;
+
+          // If edit mode (existingSp)
+          if (existingSp?.ReportId) {
+            const body = {
+              con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
+              p: JSON.stringify({ ReportId: existingSp.ReportId }),
+              f: "DynamicReport ( get colum data )",
             };
-          });
-          setColumns(mappedCols);
+
+            const resp = await CallApi(body);
+            const rightCols = resp?.rd1 || [];
+
+            // set right side columns
+            setSelectedColumns(rightCols);
+
+            // remove right side items from available list
+            const filteredAvailable = cols.filter(
+              (col) => !rightCols.some((sel) => sel.FieldName === col.FieldName)
+            );
+            setAvailableColumns(filteredAvailable);
+          } else {
+            setAvailableColumns(cols);
+            setSelectedColumns([]);
+          }
         }
-        setLoading(false);
       } catch (error) {
-        console.error("getEditColumData failed:", error);
+        console.error("Failed to fetch SP columns:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    getEditColumData();
-  }, [existingSp?.ReportId, masterOptions]);
 
-  const [openSnackbar, setOpenSnackbar] = useState(false);
+    fetchSpColum();
+  }, [selectedSp, existingSp?.ReportId]);
 
-  const handleAddColumn = () => {
-    setColumns([
-      ...columns,
-      {
-        FieldName: "",
-        HeaderName: "",
-        regex: "",
-        ColumnType: "",
-        master: "",
-      },
-    ]);
-    setErrors([...errors, { FieldName: false, HeaderName: false }]);
-  };
+  // 🔹 Handle Drag & Drop
+  const handleDragEnd = (result) => {
+    const { source, destination } = result;
+    if (!destination) return;
 
-  const handleColumnChange = (index, field, value) => {
-    const updatedColumns = [...columns];
-    if (!updatedColumns[index]) {
-      updatedColumns[index] = {
-        FieldName: "",
-        HeaderName: "",
-        regex: "",
-        ColumnType: "",
-        master: "",
-      };
-    }
-    updatedColumns[index][field] = value;
-    setColumns(updatedColumns);
+    if (source.droppableId === destination.droppableId) {
+      const items =
+        source.droppableId === "available"
+          ? Array.from(availableColumns)
+          : Array.from(selectedColumns);
+      const [moved] = items.splice(source.index, 1);
+      items.splice(destination.index, 0, moved);
 
-    const updatedErrors = [...errors];
-    if (!updatedErrors[index]) {
-      updatedErrors[index] = {};
-    }
-    if (
-      (field === "FieldName" || field === "HeaderName") &&
-      value.trim() !== ""
-    ) {
-      updatedErrors[index][field] = false;
-      setErrors(updatedErrors);
+      if (source.droppableId === "available") setAvailableColumns(items);
+      else setSelectedColumns(items);
+    } else {
+      const sourceList =
+        source.droppableId === "available"
+          ? Array.from(availableColumns)
+          : Array.from(selectedColumns);
+      const destList =
+        destination.droppableId === "available"
+          ? Array.from(availableColumns)
+          : Array.from(selectedColumns);
+
+      const [movedItem] = sourceList.splice(source.index, 1);
+      destList.splice(destination.index, 0, movedItem);
+
+      if (source.droppableId === "available") {
+        setAvailableColumns(sourceList);
+        setSelectedColumns(destList);
+      } else {
+        setAvailableColumns(destList);
+        setSelectedColumns(sourceList);
+      }
     }
   };
 
+  // 🔹 Save
   const handleSave = async () => {
-    const spErrors = {
-      ReportName: reportName.trim() === "",
-      spName: spName.trim() === "",
-      spDescription: spDescription.trim() === "",
-    };
-    setFormErrors(spErrors);
-    if (spErrors.spName || spErrors.spDescription || spErrors.ReportName) {
+    if (!reportName.trim()) {
+      setFormErrors((prev) => ({ ...prev, ReportName: true }));
+      return;
+    } else {
+      setFormErrors((prev) => ({ ...prev, ReportName: false }));
+    }
+
+    if (selectedColumns.length === 0) {
+      alert("Please move at least one column to the Selected list.");
       return;
     }
 
-    const validationResults = columns.map((col) => ({
-      FieldName: col.FieldName.trim() === "",
-      HeaderName: col.HeaderName.trim() === "",
-    }));
-    setErrors(validationResults);
-    const hasErrors = validationResults.some(
-      (err) => err.FieldName || err.HeaderName
-    );
-    if (hasErrors) {
-      return;
-    }
-
-    const result = columns.map((col, index) => ({
+    const result = selectedColumns.map((col) => ({
       ...col,
       FieldName: col.FieldName,
       HeaderName: col.HeaderName,
-      Regex: col.regex,
+      Regex: col.Regex || "",
       ColumnType: col.ColumnType,
-      MasterId: col.master,
-      Width: col.width || "",
+      MasterId: col.MasterId ?? "",
+      Width: col.Width ?? "",
       IsFilterable: 1,
       IsVisible: 1,
     }));
@@ -189,9 +185,9 @@ const AddReport = () => {
     const body = {
       con: JSON.stringify({ mode: "saveReportAndColumns" }),
       p: JSON.stringify({
-        ReportId: existingSp?.ReportId || 0, // FIXED
+        ReportId: existingSp?.ReportId || 0,
         ReportName: reportName,
-        SpNameR: spName,
+        SpNameR: selectedSp,
         ReportDescription: spDescription,
         Columns: result,
       }),
@@ -199,52 +195,18 @@ const AddReport = () => {
     };
 
     try {
-      const response = await CallApi(body);
-      if (!existingSp) {
-        setReportName("");
-        setSpName("");
-        setSpDescription("");
-        setColumns([
-          {
-            FieldName: "",
-            HeaderName: "",
-            regex: "",
-            ColumnType: "",
-            master: "",
-          },
-        ]);
-        setErrors([]);
-        setFormErrors({
-          ReportName: false,
-          spName: false,
-          spDescription: false,
-          appName: false,
-          menuName: false,
-        });
-      }
-
+      await CallApi(body);
       setOpenSnackbar(true);
-      setTimeout(() => {
-        navigate(`/${location.search}`);
-      }, 1200);
-    } catch (error) {
-      console.error("Save API failed:", error);
+      // setTimeout(() => navigate(`/${location.search}`), 1200);
+    } catch (err) {
+      console.error(err);
     }
-  };
-
-  const handleRemoveColumn = (index) => {
-    const updatedCols = [...columns];
-    updatedCols.splice(index, 1);
-    setColumns(updatedCols);
-
-    const updatedErrors = [...errors];
-    updatedErrors.splice(index, 1);
-    setErrors(updatedErrors);
   };
 
   return (
     <div className="add_report_columdata">
       <LoadingBackdrop isLoading={loading} />
+
       <div className="spList_header">
         <Typography variant="h6" className="spList_title">
           Enter Report Details
@@ -254,112 +216,65 @@ const AddReport = () => {
         </IconButton>
       </div>
 
-      <Grid item xs={6} sm={3} md={2} sx={{ m: 3 }}>
-        <FormControl fullWidth size="small" style={{ width: "200px" }}>
+      <Grid container spacing={2} sx={{ m: 3 }}>
+        <FormControl fullWidth size="small" style={{ width: "300px" }}>
           <InputLabel>Select SP</InputLabel>
           <Select
-            label="Select Type"
-            onChange={(e) =>
-              handleColumnChange(0, "ColumnType", e.target.value)
-            }
+            value={selectedSp}
+            label="Select SP"
+            onChange={(e) => setSelectedSp(e.target.value)}
+            MenuProps={{
+              PaperProps: {
+                style: {
+                  maxHeight: 400,
+                  width: 300,
+                },
+              },
+            }}
           >
-            <MenuItem value="DynamicReport1">DynamicReport1</MenuItem>
-            <MenuItem value="DynamicReport2">DynamicReport2</MenuItem>
-            <MenuItem value="DynamicReport3">DynamicReport3</MenuItem>
-            <MenuItem value="DynamicReport4">DynamicReport4</MenuItem>
-            <MenuItem value="DynamicReport5">DynamicReport5</MenuItem>
+            <MenuItem value="">
+              <em>Select Option</em>
+            </MenuItem>
+
+            {spListData?.map((opt) => (
+              <MenuItem
+                key={opt.SpName}
+                value={opt.SpName}
+                style={{ fontSize: "14px" }}
+              >
+                {opt.SpName}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
-      </Grid>
 
-      <Grid container spacing={2} sx={{ m: 3 }}>
         <Grid item xs={12} md={6}>
           <TextField
             label="Report Name"
             value={reportName}
-            onChange={(e) => setReportName(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setReportName(v);
+              if (v.trim() !== "") {
+                setFormErrors((prev) => ({ ...prev, ReportName: false }));
+              }
+            }}
             fullWidth
             size="small"
             error={formErrors.ReportName}
             helperText={formErrors.ReportName ? "Report Name is required" : ""}
           />
         </Grid>
-        {/* <Grid item xs={12} md={6}>
-          <TextField
-            label="Sp Name"
-            value={spName}
-            onChange={(e) => setSpName(e.target.value)}
-            fullWidth
-            size="small"
-            error={formErrors.spName}
-            helperText={formErrors.spName ? "Sp Name is required" : ""}
-          />
-        </Grid>
+
         <Grid item xs={12} md={6}>
           <TextField
-            label="SP Description"
+            label="Report Description"
             value={spDescription}
             onChange={(e) => setSpDescription(e.target.value)}
             fullWidth
             size="small"
-            error={formErrors.spDescription}
-            helperText={
-              formErrors.spDescription ? "SP Description is required" : ""
-            }
           />
-        </Grid> */}
-        {/* <Grid item xs={12} md={6} style={{ width: "200px" }}>
-          <FormControl fullWidth size="small" error={formErrors.appName}>
-            <InputLabel>App Name</InputLabel>
-            <Select
-              value={appName}
-              onChange={(e) => setAppName(e.target.value)}
-              label="App Name"
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              <MenuItem value="ACCOUNT">ACCOUNT</MenuItem>
-              <MenuItem value="BOOKS_KEEPING">BOOKS_KEEPING</MenuItem>
-              <MenuItem value="AC_MFGpp2">C_MFG</MenuItem>
-              <MenuItem value="DIAMONDSTORE">DIAMONDSTORE</MenuItem>
-              <MenuItem value="ECATALOG_BACKOFFICE">
-                ECATALOG_BACKOFFICE
-              </MenuItem>
-              <MenuItem value="ITASK">ITASK</MenuItem>
-            </Select>
-            {formErrors.appName && (
-              <Typography color="error" variant="caption">
-                App Name is required
-              </Typography>
-            )}
-          </FormControl>
         </Grid>
-        <Grid item xs={12} md={6} style={{ width: "200px" }}>
-          <FormControl fullWidth size="small" error={formErrors.menuName}>
-            <InputLabel>Menu Name</InputLabel>
-            <Select
-              value={menuName}
-              onChange={(e) => setMenuName(e.target.value)}
-              label="Menu Name"
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              <MenuItem value="Menu1">CASTING</MenuItem>
-              <MenuItem value="Menu2">CONVERSION</MenuItem>
-              <MenuItem value="Menu3">DEPT WISE REPORT</MenuItem>
-              <MenuItem value="Menu4">ENGAGE MATERIAL</MenuItem>
-              <MenuItem value="Menu5">INCOMPLETE RETURN</MenuItem>
-              <MenuItem value="Menu6">JOBS REPORT</MenuItem>
-            </Select>
-            {formErrors.menuName && (
-              <Typography color="error" variant="caption">
-                Menu Name is required
-              </Typography>
-            )}
-          </FormControl>
-        </Grid> */}
       </Grid>
 
       <p
@@ -369,113 +284,122 @@ const AddReport = () => {
           margin: "5px 0px 15px 20px ",
         }}
       >
-        Add Columns
+        Columns List
       </p>
 
-      <div className="allColum_Data_main">
-        {columns.map((col, index) => (
-          <Grid container spacing={2} key={index} sx={{ mb: 1 }}>
-            <Grid item xs={12} sm={4} md={2}>
-              <TextField
-                label="Field Name"
-                value={col.FieldName}
-                onChange={(e) =>
-                  handleColumnChange(index, "FieldName", e.target.value)
-                }
-                fullWidth
-                size="small"
-                error={errors[index]?.FieldName}
-                helperText={
-                  errors[index]?.FieldName ? "Field Name is required" : ""
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={4} md={2}>
-              <TextField
-                label="Header Name"
-                value={col.HeaderName}
-                onChange={(e) =>
-                  handleColumnChange(index, "HeaderName", e.target.value)
-                }
-                fullWidth
-                size="small"
-                error={errors[index]?.HeaderName}
-                helperText={
-                  errors[index]?.HeaderName ? "Header Name is required" : ""
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <TextField
-                label="Regex"
-                value={col.regex}
-                onChange={(e) =>
-                  handleColumnChange(index, "regex", e.target.value)
-                }
-                fullWidth
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={6} sm={3} md={2}>
-              <FormControl fullWidth size="small" style={{ width: "200px" }}>
-                <InputLabel>Select Type</InputLabel>
-                <Select
-                  value={col.ColumnType}
-                  label="Select Type"
-                  onChange={(e) =>
-                    handleColumnChange(index, "ColumnType", e.target.value)
-                  }
-                >
-                  <MenuItem value="String">String</MenuItem>
-                  <MenuItem value="Number">Number</MenuItem>
-                  <MenuItem value="Date">Date</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={6} sm={3} md={2}>
-              <FormControl fullWidth size="small" style={{ width: "200px" }}>
-                <InputLabel>Select Master</InputLabel>
-                <Select
-                  value={col.master}
-                  label="Select Master"
-                  onChange={(e) =>
-                    handleColumnChange(index, "master", e.target.value)
-                  }
-                >
-                  <MenuItem value="">
-                    <em>Select Option</em>
-                  </MenuItem>
-                  {masterOptions?.map((opt) => (
-                    <MenuItem key={opt.Id} value={opt.Id}>
-                      {opt.DisplayName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            {columns.length > 1 && (
-              <Grid>
-                <Button onClick={() => handleRemoveColumn(index)}>
-                  <Trash2 style={{ color: "#ef5252" }} />
-                </Button>
-              </Grid>
-            )}
-          </Grid>
-        ))}
-      </div>
-      <div style={{ marginTop: "15px" }}>
-        <Button
-          variant="outlined"
-          startIcon={<CirclePlus style={{ color: "rgb(86, 74, 252)" }} />}
-          onClick={handleAddColumn}
-          sx={{ ml: 2 }}
-          style={{ color: "rgb(86, 74, 252)", borderColor: "rgb(86, 74, 252)" }}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div
+          style={{
+            display: "flex",
+            gap: "20px",
+            padding: "0 20px",
+            height: "64vh",
+            overflow: "auto",
+          }}
         >
-          Add Column
-        </Button>
-      </div>
+          {/* LEFT SIDE */}
+          <Droppable droppableId="available">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={{
+                  flex: 1,
+                  border: "1px solid #ccc",
+                  borderRadius: "5px",
+                  height: "95%",
+                  overflow: "auto",
+                  padding: "10px",
+                  background: "#f8f8f8",
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                  Available Columns
+                </Typography>
+                {availableColumns.map((col, index) => (
+                  <Draggable
+                    key={col.FieldName}
+                    draggableId={col.FieldName}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        style={{
+                          userSelect: "none",
+                          padding: "8px",
+                          margin: "0 0 8px 0",
+                          background: "#fff",
+                          border: "1px solid #ddd",
+                          borderRadius: "4px",
+                          ...provided.draggableProps.style,
+                        }}
+                      >
+                        {col.FieldName}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
 
-      <div style={{ display: "flex", justifyContent: "center" }}>
+          {/* RIGHT SIDE */}
+          <Droppable droppableId="selected">
+            {(provided) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                style={{
+                  flex: 1,
+                  border: "1px solid #ccc",
+                  borderRadius: "5px",
+                  padding: "10px",
+                  background: "#f8f8f8",
+                  height: "95%",
+                  overflow: "auto",
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                  Selected Columns
+                </Typography>
+                {selectedColumns.map((col, index) => (
+                  <Draggable
+                    key={col.FieldName}
+                    draggableId={`sel-${col.FieldName}`}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        style={{
+                          userSelect: "none",
+                          padding: "8px",
+                          margin: "0 0 8px 0",
+                          background: "#e3f2fd",
+                          border: "1px solid #90caf9",
+                          borderRadius: "4px",
+                          ...provided.draggableProps.style,
+                        }}
+                      >
+                        {col.FieldName}
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </div>
+      </DragDropContext>
+
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
         <Button
           variant="contained"
           color="primary"
@@ -486,24 +410,17 @@ const AddReport = () => {
           Save All
         </Button>
       </div>
+
       <Snackbar
         open={openSnackbar}
         autoHideDuration={3000}
         onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert severity="success" onClose={() => setOpenSnackbar(false)}>
           Data saved successfully!
         </Alert>
       </Snackbar>
-      {/* <div>
-        <p>
-          "1": "jobpromisedate", "2": "orderdate", "3": "location", "4":
-          "company", "5": "department", "6": "user_sirname", "7": "user_name",
-          "8": "status", "9": "useJob", "10": "diamondWt", "11": "issue_weight",
-          "12": "netwet", "13": "amount", "14": "hiddenColum"
-        </p>
-      </div> */}
     </div>
   );
 };

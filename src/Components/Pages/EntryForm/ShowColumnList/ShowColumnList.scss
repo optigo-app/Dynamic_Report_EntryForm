@@ -255,6 +255,43 @@
   }
 }
 
+.sliper_top_title {
+  margin: 10px 0px 0px 2px;
+  font-weight: 600;
+}
 .customize_model_title {
   font-family: $fontFamily !important;
+}
+
+.spliter_chekbox_optins {
+  padding: 4px 9px 4px 0px !important;
+}
+
+.sliter_option_main_div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.spliter_optios_main_div {
+  height: 200px;
+  overflow: auto;
+}
+
+.spliter_add_deatil_main {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.slpiter_add_deatil_sub_div{
+  display: flex;
+  gap: 5px;
+}
+
+.slider_value_textbox {
+  width: 50%;
+}
+
+.slider_value_textbox_number {
+  width: 50%;
 }

@@ -26,7 +26,8 @@ const ReportList = () => {
     const response = await CallApi(body);
     setLoading(false);
     if (response?.rd) {
-      setSpList(response?.rd);
+      const sortedData = response?.rd.sort((a, b) => b.ReportId - a.ReportId);
+      setSpList(sortedData);
     }
   };
 
@@ -120,7 +121,7 @@ const ReportList = () => {
                         <p className="sp_list_Description">
                           {sp.ReportDescription}
                         </p>
-                      </div>  
+                      </div>
                       <div style={{ display: "flex", gap: "10px" }}>
                         <Button
                           variant="outlined"

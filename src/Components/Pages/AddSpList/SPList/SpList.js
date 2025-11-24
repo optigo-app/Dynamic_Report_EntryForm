@@ -19,7 +19,7 @@ const SpList = () => {
     setLoading(true);
     let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
     const body = {
-      con: `{"id": "", "mode": "getSpList", "appuserid": "${AllData?.LUId}"}`,
+      con: `{"id": "", "mode": "getSpNameList", "appuserid": "${AllData?.LUId}"}`,
       p: "{}",
       f: "DynamicReport ( get sp list )",
     };
@@ -37,8 +37,7 @@ const SpList = () => {
   const filteredSpList = spList?.filter((sp) => {
     const query = search.toLowerCase();
     return (
-      sp.ReportName?.toLowerCase().includes(query) ||
-      sp.ReportDescription?.toLowerCase().includes(query)
+      sp.SpName?.toLowerCase().includes(query)
     );
   });
 
@@ -116,33 +115,12 @@ const SpList = () => {
                           alignItems: "flex-start",
                         }}
                       >
-                        <p className="sp_list_Title">{sp.ReportName}</p>
+                        <p className="sp_list_Title">{sp.SpName}</p>
                         <p className="sp_list_Description">
                           {sp.ReportDescription}
                         </p>
                       </div>
                       <div style={{ display: "flex", gap: "10px" }}>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => {
-                            for (let i = 0; i < sessionStorage.length; i++) {
-                              const key = sessionStorage.key(i);
-                              if (key && key.startsWith("columnSettings")) {
-                                sessionStorage.removeItem(key);
-                                i--;
-                              }
-                            }
-                            sessionStorage.removeItem("masterSetting");
-                            navigate(`/ShowColumnList${location.search}`, {
-                              state: sp,
-                            });
-                          }}
-                          className="Btn_EditSp"
-                        >
-                          Customize
-                        </Button>
-
                         <Button
                           variant="outlined"
                           size="small"
@@ -155,19 +133,6 @@ const SpList = () => {
                         >
                           Add Column
                         </Button>
-                        {sp?.rd && (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/NewFirstSample/${sp.id}`);
-                            }}
-                            className="Btn_ShwoReport"
-                          >
-                            Show Report
-                          </Button>
-                        )}
                       </div>
                     </div>
                   ))}

@@ -12,6 +12,7 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  FormHelperText,
 } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeftFromLine, CirclePlus, Trash2 } from "lucide-react";
@@ -31,13 +32,8 @@ const AddSpColum = () => {
     appName: false,
     menuName: false,
   });
-  const [reportName, setReportName] = useState(existingSp?.ReportName || "");
-  const [spName, setSpName] = useState(existingSp?.SpNameR || "");
+  const [spName, setSpName] = useState(existingSp?.SpName || "");
   const [masterOptions, setMasterOptions] = useState([]);
-  const [spDescription, setSpDescription] = useState(
-    existingSp?.ReportDescription || ""
-  );
-
   const [columns, setColumns] = useState(
     existingSp?.result || [
       {
@@ -49,6 +45,7 @@ const AddSpColum = () => {
       },
     ]
   );
+  console.log("existingSpexistingSp", existingSp);
 
   useEffect(() => {
     const fetchMasterOptions = async () => {
@@ -74,24 +71,19 @@ const AddSpColum = () => {
   }, []);
 
   useEffect(() => {
-    if (!existingSp?.ReportId || masterOptions.length === 0) return;
+    if (!existingSp?.SpName || masterOptions.length === 0) return;
     const getEditColumData = async () => {
       const body = {
-        con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
+        con: JSON.stringify({ mode: "getSpFieldList" }),
         p: JSON.stringify({
-          ReportId: existingSp?.ReportId || 0,
+          Sp_Name: existingSp?.SpName || 0,
         }),
         f: "DynamicReport ( get colum data )",
       };
       try {
         const response = await CallApi(body);
-        if (response?.rd && response?.rd.length > 0) {
-          setReportName(response.rd[0].ReportName || "");
-          setSpName(response.rd[0].SpNameR || "");
-          setSpDescription(response.rd[0].ReportDescription || "");
-        }
-        if (response?.rd1 && response.rd1.length > 0) {
-          const mappedCols = response.rd1.map((col) => {
+        if (response?.rd && response.rd.length > 0) {
+          const mappedCols = response.rd.map((col) => {
             const match = masterOptions.find((opt) => opt.Id == col.MasterId);
             return {
               ...col,
@@ -121,7 +113,10 @@ const AddSpColum = () => {
         master: "",
       },
     ]);
-    setErrors([...errors, { FieldName: false, HeaderName: false }]);
+    setErrors([
+      ...errors,
+      { FieldName: false, HeaderName: false, ColumnType: false },
+    ]);
   };
 
   const handleColumnChange = (index, field, value) => {
@@ -143,7 +138,9 @@ const AddSpColum = () => {
       updatedErrors[index] = {};
     }
     if (
-      (field === "FieldName" || field === "HeaderName") &&
+      (field === "FieldName" ||
+        field === "ColumnType" ||
+        field === "HeaderName") &&
       value.trim() !== ""
     ) {
       updatedErrors[index][field] = false;
@@ -153,46 +150,44 @@ const AddSpColum = () => {
 
   const handleSave = async () => {
     const spErrors = {
-      ReportName: reportName.trim() === "",
       spName: spName.trim() === "",
-      spDescription: spDescription.trim() === "",
     };
     setFormErrors(spErrors);
-    if (spErrors.spName || spErrors.spDescription || spErrors.ReportName) {
+    if (spErrors.spName) {
       return;
     }
 
-    const validationResults = columns.map((col) => ({
-      FieldName: col.FieldName.trim() === "",
-      HeaderName: col.HeaderName.trim() === "",
+    const validationResults = columns?.map((col) => ({
+      FieldName: col?.FieldName?.trim() === "",
+      HeaderName: col?.HeaderName?.trim() === "",
+      ColumnType: col?.ColumnType?.trim() === "",
     }));
+
     setErrors(validationResults);
     const hasErrors = validationResults.some(
-      (err) => err.FieldName || err.HeaderName
+      (err) => err.FieldName || err.HeaderName || err.ColumnType
     );
     if (hasErrors) {
       return;
     }
 
     const result = columns.map((col, index) => ({
-      ...col,
+      // ...col,
       FieldName: col.FieldName,
       HeaderName: col.HeaderName,
       Regex: col.regex,
       ColumnType: col.ColumnType,
-      MasterId: col.master,
-      Width: col.width || "",
+      MasterId: col.master || col.MasterId,
+      Width: col.width || col.Width,
       IsFilterable: 1,
       IsVisible: 1,
     }));
 
     const body = {
-      con: JSON.stringify({ mode: "saveReportAndColumns" }),
+      con: JSON.stringify({ mode: "saveSpFieldList" }),
       p: JSON.stringify({
-        ReportId: existingSp?.ReportId || 0, // FIXED
-        ReportName: reportName,
+        SpNumber: "",
         SpNameR: spName,
-        ReportDescription: spDescription,
         Columns: result,
       }),
       f: "DynamicReport ( saveReportAndColumns )",
@@ -201,9 +196,7 @@ const AddSpColum = () => {
     try {
       const response = await CallApi(body);
       if (!existingSp) {
-        setReportName("");
         setSpName("");
-        setSpDescription("");
         setColumns([
           {
             FieldName: "",
@@ -224,9 +217,9 @@ const AddSpColum = () => {
       }
 
       setOpenSnackbar(true);
-      setTimeout(() => {
-        navigate(`/${location.search}`);
-      }, 1200);
+      // setTimeout(() => {
+      //   navigate(`/${location.search}`);
+      // }, 1200);
     } catch (error) {
       console.error("Save API failed:", error);
     }
@@ -241,6 +234,8 @@ const AddSpColum = () => {
     updatedErrors.splice(index, 1);
     setErrors(updatedErrors);
   };
+
+  console.log("columnscolumns", columns);
 
   return (
     <div className="add_sp_columdata">
@@ -257,17 +252,6 @@ const AddSpColum = () => {
       <Grid container spacing={2} sx={{ m: 3 }}>
         <Grid item xs={12} md={6}>
           <TextField
-            label="Report Name"
-            value={reportName}
-            onChange={(e) => setReportName(e.target.value)}
-            fullWidth
-            size="small"
-            error={formErrors.ReportName}
-            helperText={formErrors.ReportName ? "Report Name is required" : ""}
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <TextField
             label="Sp Name"
             value={spName}
             onChange={(e) => setSpName(e.target.value)}
@@ -277,73 +261,7 @@ const AddSpColum = () => {
             helperText={formErrors.spName ? "Sp Name is required" : ""}
           />
         </Grid>
-        <Grid item xs={12} md={6}>
-          <TextField
-            label="SP Description"
-            value={spDescription}
-            onChange={(e) => setSpDescription(e.target.value)}
-            fullWidth
-            size="small"
-            error={formErrors.spDescription}
-            helperText={
-              formErrors.spDescription ? "SP Description is required" : ""
-            }
-          />
-        </Grid>
-        {/* <Grid item xs={12} md={6} style={{ width: "200px" }}>
-          <FormControl fullWidth size="small" error={formErrors.appName}>
-            <InputLabel>App Name</InputLabel>
-            <Select
-              value={appName}
-              onChange={(e) => setAppName(e.target.value)}
-              label="App Name"
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              <MenuItem value="ACCOUNT">ACCOUNT</MenuItem>
-              <MenuItem value="BOOKS_KEEPING">BOOKS_KEEPING</MenuItem>
-              <MenuItem value="AC_MFGpp2">C_MFG</MenuItem>
-              <MenuItem value="DIAMONDSTORE">DIAMONDSTORE</MenuItem>
-              <MenuItem value="ECATALOG_BACKOFFICE">
-                ECATALOG_BACKOFFICE
-              </MenuItem>
-              <MenuItem value="ITASK">ITASK</MenuItem>
-            </Select>
-            {formErrors.appName && (
-              <Typography color="error" variant="caption">
-                App Name is required
-              </Typography>
-            )}
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={6} style={{ width: "200px" }}>
-          <FormControl fullWidth size="small" error={formErrors.menuName}>
-            <InputLabel>Menu Name</InputLabel>
-            <Select
-              value={menuName}
-              onChange={(e) => setMenuName(e.target.value)}
-              label="Menu Name"
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              <MenuItem value="Menu1">CASTING</MenuItem>
-              <MenuItem value="Menu2">CONVERSION</MenuItem>
-              <MenuItem value="Menu3">DEPT WISE REPORT</MenuItem>
-              <MenuItem value="Menu4">ENGAGE MATERIAL</MenuItem>
-              <MenuItem value="Menu5">INCOMPLETE RETURN</MenuItem>
-              <MenuItem value="Menu6">JOBS REPORT</MenuItem>
-            </Select>
-            {formErrors.menuName && (
-              <Typography color="error" variant="caption">
-                Menu Name is required
-              </Typography>
-            )}
-          </FormControl>
-        </Grid> */}
       </Grid>
-
       <p
         style={{
           fontSize: "20px",
@@ -399,7 +317,12 @@ const AddSpColum = () => {
               />
             </Grid>
             <Grid item xs={6} sm={3} md={2}>
-              <FormControl fullWidth size="small" style={{ width: "200px" }}>
+              <FormControl
+                fullWidth
+                size="small"
+                style={{ width: "200px" }}
+                error={errors[index]?.ColumnType}
+              >
                 <InputLabel>Select Type</InputLabel>
                 <Select
                   value={col.ColumnType}
@@ -412,6 +335,10 @@ const AddSpColum = () => {
                   <MenuItem value="Number">Number</MenuItem>
                   <MenuItem value="Date">Date</MenuItem>
                 </Select>
+
+                {errors[index]?.ColumnType && (
+                  <FormHelperText>Column Type is required</FormHelperText>
+                )}
               </FormControl>
             </Grid>
             <Grid item xs={6} sm={3} md={2}>
@@ -472,7 +399,7 @@ const AddSpColum = () => {
         open={openSnackbar}
         autoHideDuration={3000}
         onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert severity="success" onClose={() => setOpenSnackbar(false)}>
           Data saved successfully!

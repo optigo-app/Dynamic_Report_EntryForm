@@ -62,6 +62,71 @@ const ShowColumnList = () => {
   const [spliterFirst, setSpliterFirst] = useState(null);
   const [spliterSecond, setSpliterSecond] = useState(null);
 
+  // useEffect(() => {
+
+  //   const fetchData = async () => {
+  //     setLoading(true);
+  //     if (!location.state?.ReportId) return;
+  //     const body = {
+  //       con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
+  //       p: JSON.stringify({ ReportId: location.state.ReportId }),
+  //       f: "DynamicReport (get colum data)",
+  //     };
+  //     try {
+  //       const response = await CallApi(body);
+  //       if (response?.rd && response.rd.length > 0) {
+  //         const rdData = response.rd[0];
+
+  //         console.log('response', response);
+  //         setSpData({
+  //           ...response.rd[0],
+  //           master: response?.rd2,
+  //           result: response.rd1 || [],
+  //         });
+  //         setSpliterFirst(rdData?.SpliterFirstPanel || null);
+  //         setSpliterSecond(rdData?.SpliterSecondPanel || null);
+  //       }
+  //       if (response?.rd1 && response.rd1.length > 0) {
+  //         setSpData((prev) => ({ ...prev, result: response.rd1 }));
+  //         const visibleCols = response.rd1.filter((c) => c.IsVisible === true);
+
+  //         let initialSelected = [
+  //           "Master Setting",
+  //           ...visibleCols.map((c) => c.HeaderName),
+  //         ];
+
+  //         if (response?.rd[0]?.IsLargeDataReport) {
+  //           initialSelected.push("Largest Data Report");
+  //           if (response?.rd[0]?.LargeDataCount) {
+  //             setLargestLength(response.rd[0].LargeDataCount.toString());
+  //           }
+  //         }
+
+  //         if (response?.rd[0]?.IsSpliterReport) {
+  //           initialSelected.push("Spliter Report");
+  //           if (response?.rd[0]?.DateMonthRestriction) {
+  //             setSpliterMonthCont(
+  //               response.rd[0].DateMonthRestriction.toString()
+  //             );
+  //           }
+  //         }
+
+  //         setAllDateOptionsShow(response?.rd[0]?.ServerSideDateWiseFilter);
+  //         setSelectedCols(initialSelected);
+  //         let statusMap = { "Master Setting": false };
+  //         visibleCols.forEach((c) => {
+  //           statusMap[c.HeaderName] = true;
+  //         });
+  //         setCustomizedStatus(statusMap);
+  //       }
+  //       setLoading(false);
+  //     } catch (err) {
+  //       console.error("Failed fetching report settings", err);
+  //     }
+  //   };
+  //   fetchData();
+  // }, [location.state?.ReportId]);
+
   useEffect(() => {
     const getLargeColumData = async () => {
       const body = {
@@ -87,26 +152,33 @@ const ShowColumnList = () => {
     const fetchData = async () => {
       setLoading(true);
       if (!location.state?.ReportId) return;
+
       const body = {
         con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
         p: JSON.stringify({ ReportId: location.state.ReportId }),
         f: "DynamicReport (get colum data)",
       };
+
       try {
         const response = await CallApi(body);
         if (response?.rd && response.rd.length > 0) {
           const rdData = response.rd[0];
+
           setSpData({
-            ...response.rd[0],
+            ...rdData,
             master: response?.rd2,
             result: response.rd1 || [],
           });
           setSpliterFirst(rdData?.SpliterFirstPanel || null);
           setSpliterSecond(rdData?.SpliterSecondPanel || null);
         }
+
         if (response?.rd1 && response.rd1.length > 0) {
-          setSpData((prev) => ({ ...prev, result: response.rd1 }));
-          const visibleCols = response.rd1.filter((c) => c.IsVisible === true);
+          const sortedRd1 = [...response.rd1].sort(
+            (a, b) => (a.DisplayOrder || 0) - (b.DisplayOrder || 0)
+          );
+          setSpData((prev) => ({ ...prev, result: sortedRd1 }));
+          const visibleCols = sortedRd1.filter((c) => c.IsVisible === true);
 
           let initialSelected = [
             "Master Setting",
@@ -131,19 +203,21 @@ const ShowColumnList = () => {
 
           setAllDateOptionsShow(response?.rd[0]?.ServerSideDateWiseFilter);
           setSelectedCols(initialSelected);
+
           let statusMap = { "Master Setting": false };
           visibleCols.forEach((c) => {
             statusMap[c.HeaderName] = true;
           });
           setCustomizedStatus(statusMap);
         }
+
         setLoading(false);
       } catch (err) {
         console.error("Failed fetching report settings", err);
       }
     };
-    fetchData();
     getLargeColumData();
+    fetchData();
   }, [location.state?.ReportId]);
 
   const handleToggleFilterOption = async () => {
@@ -324,13 +398,18 @@ const ShowColumnList = () => {
     const [movedItem] = reordered.splice(result.source.index, 1);
     reordered.splice(result.destination.index, 0, movedItem);
 
+    // Update DisplayOrder based on new index
     reordered.forEach((col, index) => {
       col.DisplayOrder = index + 1;
     });
 
+    // Update the state properly so UI re-renders
+    setSpData((prev) => ({ ...prev, result: reordered }));
+
+    // Prepare payload for API
     const payload = {
       ReportId: spData?.ReportId,
-      Columns: reordered?.map((col) => ({
+      Columns: reordered.map((col) => ({
         ColId: col.ColId,
         IsVisible: col.IsVisible ? 1 : 0,
         DisplayOrder: col.DisplayOrder,
@@ -348,15 +427,11 @@ const ShowColumnList = () => {
     } catch (err) {
       console.error("Failed to save display order", err);
     }
-    spData.result = reordered;
   };
-
-  console.log("largeDataColumlargeDataColum", largeDataColum);
 
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-
   return (
     <div>
       <LoadingBackdrop isLoading={loading} />
@@ -417,25 +492,13 @@ const ShowColumnList = () => {
                     <DragDropContext onDragEnd={handleDragEnd}>
                       <Droppable droppableId="droppableColumns">
                         {(provided) => {
-                          const sortedColumns = Array.isArray(spData?.result)
-                            ? [...spData.result].sort((a, b) => {
-                                if (
-                                  a.DisplayOrder != null &&
-                                  b.DisplayOrder != null
-                                ) {
-                                  return a.DisplayOrder - b.DisplayOrder;
-                                }
-                                return 0;
-                              })
-                            : [];
-
                           return (
                             <div
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               className="droppable-columns"
                             >
-                              {sortedColumns.map((col, index) => {
+                              {spData?.result?.map((col, index) => {
                                 const label = col.HeaderName;
                                 const isChecked = selectedCols.includes(label);
                                 const displayNumber =
@@ -686,7 +749,7 @@ const ShowColumnList = () => {
                       </div>
                     </div>
 
-                    <Button
+                    {/* <Button
                       style={{
                         color: "blue",
                         textDecoration: "underline",
@@ -696,7 +759,7 @@ const ShowColumnList = () => {
                       onClick={handleOpen}
                     >
                       ADD OTHER DETAIL ON SPLITER VIEW
-                    </Button>
+                    </Button> */}
                   </div>
                 )}
               </div>
@@ -793,6 +856,7 @@ const ShowColumnList = () => {
                 selectedColumn={activeItem.initialData}
                 spId={activeItem.spId}
                 onClose={closeEditor}
+                allColumData={spData?.result}
               />
             ) : null}
           </DialogContent>
@@ -825,106 +889,129 @@ const ShowColumnList = () => {
           aria-describedby="modal-modal-description"
         >
           <Box sx={style}>
-            <p
-              style={{
-                margin: "10px 0px 0px 13px",
-                fontWeight: 600,
-              }}
-            >
-              Select For First Slide
-            </p>
-
-            <div style={{ height: "100px", overflow: "auto" }}>
-              {largeDataColum?.map((col) => (
-                <div
-                  key={`ldr2-${col.ColId}`}
-                  className="column_row sub_row"
-                  style={{ display: "flex", alignItems: "center" }}
-                >
-                  <Checkbox
-                    checked={spliterSecond === col.FieldName}
-                    onChange={() => handleSecondSelect(col.FieldName)}
-                  />
-                  <Typography className="column_label">
-                    {col.HeaderName}
-                  </Typography>
+            <div>
+              <div style={{ display: "flex", gap: "30px" }}>
+                <div style={{ width: "20%" }}>
+                  <p className="sliper_top_title">
+                    Select For First Slide - First Value
+                  </p>
+                  <div className="sliter_option_main_div">
+                    <div className="spliter_optios_main_div">
+                      {largeDataColum?.map((col) => (
+                        <div
+                          key={`ldr2-${col.ColId}`}
+                          className="column_row sub_row"
+                          style={{ display: "flex", alignItems: "center" }}
+                        >
+                          <Checkbox
+                            checked={spliterSecond === col.FieldName}
+                            onChange={() => handleSecondSelect(col.FieldName)}
+                            className="spliter_chekbox_optins"
+                          />
+                          <Typography className="column_label">
+                            {col.HeaderName}
+                          </Typography>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="spliter_add_deatil_main">
+                      <div className="slpiter_add_deatil_sub_div">
+                        <TextField
+                          type="text"
+                          label="Enter title"
+                          size="small"
+                          className="slider_value_textbox"
+                        />
+                        <TextField
+                          type="text"
+                          label="Enter formula"
+                          fullWidth
+                          size="small"
+                          className="slider_value_textbox"
+                        />
+                      </div>
+                      <div className="slpiter_add_deatil_sub_div">
+                        <TextField
+                          type="text"
+                          label="Enter Unit"
+                          fullWidth
+                          size="small"
+                          className="slider_value_textbox_number"
+                        />
+                        <TextField
+                          className="slider_value_textbox_number"
+                          type="number"
+                          label="Enter Decimal"
+                          fullWidth
+                          size="small"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <TextField
-              type="text"
-              label="Enter title"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px" }}
-            />
-            <TextField
-              type="text"
-              label="Enter formula"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px" }}
-            />
-            <TextField
-              type="text"
-              label="Enter Unit"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px" }}
-            />
-            <TextField
-              type="number"
-              label="Enter Decimal"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px", width: "120px" }}
-            />
-            <div style={{ height: "100px", overflow: "auto" }}>
-              {largeDataColum?.map((col) => (
-                <div
-                  key={`ldr2-${col.ColId}`}
-                  className="column_row sub_row"
-                  style={{ display: "flex", alignItems: "center" }}
-                >
-                  <Checkbox
-                    checked={spliterSecond === col.FieldName}
-                    onChange={() => handleSecondSelect(col.FieldName)}
-                  />
-                  <Typography className="column_label">
-                    {col.HeaderName}
-                  </Typography>
-                </div>
-              ))}
-            </div>
+              </div>
 
-            <TextField
-              type="text"
-              label="Enter title"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px" }}
-            />
-            <TextField
-              type="text"
-              label="Enter formula"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px" }}
-            />
-            <TextField
-              type="text"
-              label="Enter Unit"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px" }}
-            />
-            <TextField
-              type="number"
-              label="Enter Decimal"
-              fullWidth
-              size="small"
-              style={{ margin: "0px 15px", width: "120px" }}
-            />
+              <div style={{ display: "flex", gap: "30px" }}>
+                <div style={{ width: "20%" }}>
+                  <p className="sliper_top_title">
+                    Select For Second Slide - First Value
+                  </p>
+                  <div className="sliter_option_main_div">
+                    <div className="spliter_optios_main_div">
+                      {largeDataColum?.map((col) => (
+                        <div
+                          key={`ldr2-${col.ColId}`}
+                          className="column_row sub_row"
+                          style={{ display: "flex", alignItems: "center" }}
+                        >
+                          <Checkbox
+                            checked={spliterSecond === col.FieldName}
+                            onChange={() => handleSecondSelect(col.FieldName)}
+                            className="spliter_chekbox_optins"
+                          />
+                          <Typography className="column_label">
+                            {col.HeaderName}
+                          </Typography>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="spliter_add_deatil_main">
+                      <div className="slpiter_add_deatil_sub_div">
+                        <TextField
+                          type="text"
+                          label="Enter title"
+                          size="small"
+                          className="slider_value_textbox"
+                        />
+                        <TextField
+                          type="text"
+                          label="Enter formula"
+                          fullWidth
+                          size="small"
+                          className="slider_value_textbox"
+                        />
+                      </div>
+                      <div className="slpiter_add_deatil_sub_div">
+                        <TextField
+                          type="text"
+                          label="Enter Unit"
+                          fullWidth
+                          size="small"
+                          className="slider_value_textbox_number"
+                        />
+                        <TextField
+                          className="slider_value_textbox_number"
+                          type="number"
+                          label="Enter Decimal"
+                          fullWidth
+                          size="small"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Box>
         </Modal>
       </div>
