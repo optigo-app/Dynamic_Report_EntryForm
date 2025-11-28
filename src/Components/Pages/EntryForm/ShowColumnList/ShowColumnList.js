@@ -54,83 +54,28 @@ const ShowColumnList = () => {
   const [activeItem, setActiveItem] = useState(null);
   const [customizedStatus, setCustomizedStatus] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [otherSettingSnackbarOpen, setOtherSettingSnackbarOpen] =
+    useState(false);
   const [snackbarError, setSnackbarError] = useState(false);
   const [largestLength, setLargestLength] = useState("");
   const [spliterMonthCont, setSpliterMonthCont] = useState("");
   const [largeDataColum, setLargeDataColum] = useState();
+  const [spliterReportColum, setSpliterReportColum] = useState();
   const [loading, setLoading] = useState(false);
   const [spliterFirst, setSpliterFirst] = useState(null);
   const [spliterSecond, setSpliterSecond] = useState(null);
-
-  // useEffect(() => {
-
-  //   const fetchData = async () => {
-  //     setLoading(true);
-  //     if (!location.state?.ReportId) return;
-  //     const body = {
-  //       con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
-  //       p: JSON.stringify({ ReportId: location.state.ReportId }),
-  //       f: "DynamicReport (get colum data)",
-  //     };
-  //     try {
-  //       const response = await CallApi(body);
-  //       if (response?.rd && response.rd.length > 0) {
-  //         const rdData = response.rd[0];
-
-  //         console.log('response', response);
-  //         setSpData({
-  //           ...response.rd[0],
-  //           master: response?.rd2,
-  //           result: response.rd1 || [],
-  //         });
-  //         setSpliterFirst(rdData?.SpliterFirstPanel || null);
-  //         setSpliterSecond(rdData?.SpliterSecondPanel || null);
-  //       }
-  //       if (response?.rd1 && response.rd1.length > 0) {
-  //         setSpData((prev) => ({ ...prev, result: response.rd1 }));
-  //         const visibleCols = response.rd1.filter((c) => c.IsVisible === true);
-
-  //         let initialSelected = [
-  //           "Master Setting",
-  //           ...visibleCols.map((c) => c.HeaderName),
-  //         ];
-
-  //         if (response?.rd[0]?.IsLargeDataReport) {
-  //           initialSelected.push("Largest Data Report");
-  //           if (response?.rd[0]?.LargeDataCount) {
-  //             setLargestLength(response.rd[0].LargeDataCount.toString());
-  //           }
-  //         }
-
-  //         if (response?.rd[0]?.IsSpliterReport) {
-  //           initialSelected.push("Spliter Report");
-  //           if (response?.rd[0]?.DateMonthRestriction) {
-  //             setSpliterMonthCont(
-  //               response.rd[0].DateMonthRestriction.toString()
-  //             );
-  //           }
-  //         }
-
-  //         setAllDateOptionsShow(response?.rd[0]?.ServerSideDateWiseFilter);
-  //         setSelectedCols(initialSelected);
-  //         let statusMap = { "Master Setting": false };
-  //         visibleCols.forEach((c) => {
-  //           statusMap[c.HeaderName] = true;
-  //         });
-  //         setCustomizedStatus(statusMap);
-  //       }
-  //       setLoading(false);
-  //     } catch (err) {
-  //       console.error("Failed fetching report settings", err);
-  //     }
-  //   };
-  //   fetchData();
-  // }, [location.state?.ReportId]);
+  const [otherSpliterSideData1, setOtherSpliterSideData1] = useState();
+  const [otherSpliterSideData2, setOtherSpliterSideData2] = useState();
+  const [iframeMaster, setIframeMaster] = useState();
 
   useEffect(() => {
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
     const getLargeColumData = async () => {
       const body = {
-        con: JSON.stringify({ mode: "getOtherSettings" }),
+        con: JSON.stringify({
+          mode: "getOtherSettings",
+          appuserid: AllData?.LUId,
+        }),
         p: JSON.stringify({ ReportId: location.state.ReportId }),
         f: "DynamicReport (get Largedata data)",
       };
@@ -143,6 +88,27 @@ const ShowColumnList = () => {
             .filter((item) => item.IsOn)
             .map((item) => item.DateFrameId);
           setSelectedDateOptions(activeIds);
+          setSpliterReportColum(response?.rd3);
+        }
+      } catch (err) {
+        console.error("Failed fetching report settings", err);
+      }
+    };
+
+    const getIframeMaster = async () => {
+      const body = {
+        con: JSON.stringify({
+          mode: "getRedirectMaster",
+          appuserid: AllData?.LUId,
+        }),
+        p: JSON.stringify({ ReportId: location.state.ReportId }),
+        f: "DynamicReport (get Largedata data)",
+      };
+      try {
+        const response = await CallApi(body);
+        if (response) {
+          setIframeMaster(response);
+          console.log("response: ", response);
         }
       } catch (err) {
         console.error("Failed fetching report settings", err);
@@ -154,7 +120,10 @@ const ShowColumnList = () => {
       if (!location.state?.ReportId) return;
 
       const body = {
-        con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
+        con: JSON.stringify({
+          mode: "getReportAndColumnSettings",
+          appuserid: AllData?.LUId,
+        }),
         p: JSON.stringify({ ReportId: location.state.ReportId }),
         f: "DynamicReport (get colum data)",
       };
@@ -171,6 +140,12 @@ const ShowColumnList = () => {
           });
           setSpliterFirst(rdData?.SpliterFirstPanel || null);
           setSpliterSecond(rdData?.SpliterSecondPanel || null);
+          setOtherSpliterSideData1(
+            JSON.parse(rdData?.otherSpliterSideData1) || null
+          );
+          setOtherSpliterSideData2(
+            JSON.parse(rdData?.otherSpliterSideData2) || null
+          );
         }
 
         if (response?.rd1 && response.rd1.length > 0) {
@@ -216,6 +191,8 @@ const ShowColumnList = () => {
         console.error("Failed fetching report settings", err);
       }
     };
+
+    getIframeMaster();
     getLargeColumData();
     fetchData();
   }, [location.state?.ReportId]);
@@ -432,6 +409,259 @@ const ShowColumnList = () => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
+
+  const [firstSlideValues, setFirstSlideValues] = useState({
+    1: {},
+    2: {},
+    3: {},
+    4: {},
+  });
+  const [secondSlideValues, setSecondSlideValues] = useState({
+    1: {},
+    2: {},
+    3: {},
+    4: {},
+  });
+
+  const [firstSlideSelected, setFirstSlideSelected] = useState({
+    1: "",
+    2: "",
+    3: "",
+    4: "",
+  });
+  const [secondSlideSelected, setSecondSlideSelected] = useState({
+    1: "",
+    2: "",
+    3: "",
+    4: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const handleSave = async () => {
+    setLoading(true);
+    let newErrors = {};
+    Object.entries(firstSlideValues).forEach(([block, val]) => {
+      if (firstSlideSelected[block] && !val.Title?.trim()) {
+        newErrors[`F-${block}`] = "Title is required";
+      }
+    });
+    Object.entries(secondSlideValues).forEach(([block, val]) => {
+      if (secondSlideSelected[block] && !val.Title?.trim()) {
+        newErrors[`S-${block}`] = "Title is required";
+      }
+    });
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      setLoading(false);
+      return;
+    }
+    const spliterData = [];
+    Object.entries(firstSlideValues).forEach(([block, val]) => {
+      if (firstSlideSelected[block]) {
+        spliterData.push({
+          SideNumber: 1,
+          BlockNumber: Number(block),
+          SelectedField: firstSlideSelected[block],
+          Title: val.Title || "",
+          Unit: val.Unit || "",
+          Formula: val.Formula || "",
+          DecimalValue: val.DecimalValue || "0",
+        });
+      }
+    });
+    Object.entries(secondSlideValues).forEach(([block, val]) => {
+      if (secondSlideSelected[block]) {
+        spliterData.push({
+          SideNumber: 2,
+          BlockNumber: Number(block),
+          SelectedField: secondSlideSelected[block],
+          Title: val.Title || "",
+          Unit: val.Unit || "",
+          Formula: val.Formula || "",
+          DecimalValue: val.DecimalValue || "0",
+        });
+      }
+    });
+
+    const sliderDataBody = {
+      con: JSON.stringify({ mode: "saveSpliterData" }),
+      p: JSON.stringify({
+        ReportId: spData?.ReportId,
+        SpliterData: spliterData,
+      }),
+      f: "DynamicReport ( saveSpliterData )",
+    };
+    console.log("API Payload:", sliderDataBody);
+    try {
+      const response = await CallApi(sliderDataBody);
+      if (response?.rd[0]?.stat == 1) {
+        setOtherSettingSnackbarOpen(true);
+        setTimeout(() => {
+          setOtherSettingSnackbarOpen(false);
+        }, 4000);
+      }
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const SlideValueSelector = ({
+    title,
+    blockNumber,
+    sideNumber,
+    selectedField,
+    onSelect,
+    columns,
+    values,
+    setValues,
+    errors,
+    setErrors,
+  }) => {
+    const handleCheckboxChange = (fieldName) => {
+      if (selectedField === fieldName) {
+        onSelect(""); // unselect
+        setValues((prev) => ({
+          ...prev,
+          [blockNumber]: { ...prev[blockNumber], SelectedField: "" },
+        }));
+      } else {
+        onSelect(fieldName);
+        setValues((prev) => ({
+          ...prev,
+          [blockNumber]: { ...prev[blockNumber], SelectedField: fieldName },
+        }));
+      }
+    };
+
+    const handleInputChange = (key, value) => {
+      setValues((prev) => ({
+        ...prev,
+        [blockNumber]: { ...prev[blockNumber], [key]: value },
+      }));
+    };
+
+    return (
+      <div style={{ width: "22%" }}>
+        <p className="sliper_top_title">{title}</p>
+
+        <div className="sliter_option_main_div">
+          <div className="spliter_optios_main_div">
+            {columns?.map((col) => (
+              <div
+                key={`col-${col.ColId}`}
+                className="column_row sub_row"
+                style={{ display: "flex", alignItems: "center" }}
+              >
+                <Checkbox
+                  checked={selectedField === col.FieldName}
+                  onChange={() => handleCheckboxChange(col.FieldName)}
+                  className="spliter_chekbox_optins"
+                />
+                <Typography className="column_label">
+                  {col.HeaderName}
+                </Typography>
+              </div>
+            ))}
+          </div>
+
+          <div className="spliter_add_deatil_main">
+            <div className="slpiter_add_deatil_sub_div">
+              <TextField
+                type="text"
+                label="Enter title"
+                size="small"
+                fullWidth
+                value={values[blockNumber]?.Title || ""}
+                onChange={(e) => handleInputChange("Title", e.target.value)}
+                error={!!errors[blockNumber]}
+                helperText={errors[blockNumber]}
+              />
+              <TextField
+                type="text"
+                label="Enter formula"
+                size="small"
+                fullWidth
+                value={values[blockNumber]?.Formula || ""}
+                onChange={(e) => handleInputChange("Formula", e.target.value)}
+              />
+            </div>
+
+            <div className="slpiter_add_deatil_sub_div">
+              <TextField
+                type="text"
+                label="Enter Unit"
+                size="small"
+                fullWidth
+                value={values[blockNumber]?.Unit || ""}
+                onChange={(e) => handleInputChange("Unit", e.target.value)}
+              />
+              <TextField
+                type="number"
+                label="Enter Decimal"
+                size="small"
+                fullWidth
+                value={values[blockNumber]?.DecimalValue || ""}
+                onChange={(e) =>
+                  handleInputChange("DecimalValue", e.target.value)
+                }
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    if (!otherSpliterSideData1) return;
+
+    const mapSlideData = (data, setSelected, setValues) => {
+      const newSelected = {};
+      const newValues = {};
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (value?.length > 0) {
+          let blockNumber = 0;
+
+          if (key === "firstSlideFirstData") blockNumber = 1;
+          if (key === "firstSlideSecondData") blockNumber = 2;
+          if (key === "firstSlideThirdData") blockNumber = 3;
+          if (key === "firstSlideFourthData") blockNumber = 4;
+
+          const row = value[0];
+
+          newSelected[blockNumber] = row.selectedField;
+          newValues[blockNumber] = {
+            Title: row.title || "",
+            Unit: row.unit || "",
+            Formula: row.formula || "",
+            DecimalValue: row.decimal || "",
+          };
+        }
+      });
+
+      // Merge with defaults (to keep other blocks empty)
+      setSelected((prev) => ({ ...prev, ...newSelected }));
+      setValues((prev) => ({ ...prev, ...newValues }));
+    };
+
+    // Fill FIRST SLIDE
+    mapSlideData(
+      otherSpliterSideData1,
+      setFirstSlideSelected,
+      setFirstSlideValues
+    );
+
+    // Fill SECOND SLIDE
+    if (otherSpliterSideData2)
+      mapSlideData(
+        otherSpliterSideData2,
+        setSecondSlideSelected,
+        setSecondSlideValues
+      );
+  }, [otherSpliterSideData1, otherSpliterSideData2]);
+
   return (
     <div>
       <LoadingBackdrop isLoading={loading} />
@@ -749,7 +979,7 @@ const ShowColumnList = () => {
                       </div>
                     </div>
 
-                    {/* <Button
+                    <Button
                       style={{
                         color: "blue",
                         textDecoration: "underline",
@@ -759,7 +989,7 @@ const ShowColumnList = () => {
                       onClick={handleOpen}
                     >
                       ADD OTHER DETAIL ON SPLITER VIEW
-                    </Button> */}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -857,6 +1087,7 @@ const ShowColumnList = () => {
                 spId={activeItem.spId}
                 onClose={closeEditor}
                 allColumData={spData?.result}
+                redirectionMaster={iframeMaster}
               />
             ) : null}
           </DialogContent>
@@ -871,6 +1102,17 @@ const ShowColumnList = () => {
             Column setting saved successfully. Redirecting to SP List...
           </Alert>
         </Snackbar>
+
+        <Snackbar
+          open={otherSettingSnackbarOpen}
+          autoHideDuration={1200}
+          onClose={() => setOtherSettingSnackbarOpen(false)}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert severity="success" sx={{ width: "100%" }}>
+            Other Spliter Setting Saved Successfully.
+          </Alert>
+        </Snackbar>
         <Snackbar
           open={snackbarError}
           autoHideDuration={3000}
@@ -882,134 +1124,88 @@ const ShowColumnList = () => {
               fieldErrors?.join(", ")}
           </Alert>
         </Snackbar>
-        <Modal
-          open={open}
-          onClose={handleClose}
-          aria-labelledby="modal-modal-title"
-          aria-describedby="modal-modal-description"
-        >
+        <Modal open={open} onClose={handleClose}>
           <Box sx={style}>
+            <LoadingBackdrop isLoading={loading} />
             <div>
-              <div style={{ display: "flex", gap: "30px" }}>
-                <div style={{ width: "20%" }}>
-                  <p className="sliper_top_title">
-                    Select For First Slide - First Value
-                  </p>
-                  <div className="sliter_option_main_div">
-                    <div className="spliter_optios_main_div">
-                      {largeDataColum?.map((col) => (
-                        <div
-                          key={`ldr2-${col.ColId}`}
-                          className="column_row sub_row"
-                          style={{ display: "flex", alignItems: "center" }}
-                        >
-                          <Checkbox
-                            checked={spliterSecond === col.FieldName}
-                            onChange={() => handleSecondSelect(col.FieldName)}
-                            className="spliter_chekbox_optins"
-                          />
-                          <Typography className="column_label">
-                            {col.HeaderName}
-                          </Typography>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="spliter_add_deatil_main">
-                      <div className="slpiter_add_deatil_sub_div">
-                        <TextField
-                          type="text"
-                          label="Enter title"
-                          size="small"
-                          className="slider_value_textbox"
-                        />
-                        <TextField
-                          type="text"
-                          label="Enter formula"
-                          fullWidth
-                          size="small"
-                          className="slider_value_textbox"
-                        />
-                      </div>
-                      <div className="slpiter_add_deatil_sub_div">
-                        <TextField
-                          type="text"
-                          label="Enter Unit"
-                          fullWidth
-                          size="small"
-                          className="slider_value_textbox_number"
-                        />
-                        <TextField
-                          className="slider_value_textbox_number"
-                          type="number"
-                          label="Enter Decimal"
-                          fullWidth
-                          size="small"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div style={{ display: "flex", gap: "20px" }}>
+                {[1, 2, 3, 4].map((block) => (
+                  <SlideValueSelector
+                    key={`F-${block}`}
+                    title={`First Slide - Value ${block}`}
+                    blockNumber={block}
+                    sideNumber={1}
+                    selectedField={firstSlideSelected[block]}
+                    onSelect={(val) =>
+                      setFirstSlideSelected((prev) => ({
+                        ...prev,
+                        [block]: val,
+                      }))
+                    }
+                    columns={spliterReportColum}
+                    values={firstSlideValues}
+                    setValues={setFirstSlideValues}
+                    errors={
+                      errors[`F-${block}`]
+                        ? { [block]: errors[`F-${block}`] }
+                        : {}
+                    }
+                    setErrors={setErrors}
+                  />
+                ))}
               </div>
 
-              <div style={{ display: "flex", gap: "30px" }}>
-                <div style={{ width: "20%" }}>
-                  <p className="sliper_top_title">
-                    Select For Second Slide - First Value
-                  </p>
-                  <div className="sliter_option_main_div">
-                    <div className="spliter_optios_main_div">
-                      {largeDataColum?.map((col) => (
-                        <div
-                          key={`ldr2-${col.ColId}`}
-                          className="column_row sub_row"
-                          style={{ display: "flex", alignItems: "center" }}
-                        >
-                          <Checkbox
-                            checked={spliterSecond === col.FieldName}
-                            onChange={() => handleSecondSelect(col.FieldName)}
-                            className="spliter_chekbox_optins"
-                          />
-                          <Typography className="column_label">
-                            {col.HeaderName}
-                          </Typography>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="spliter_add_deatil_main">
-                      <div className="slpiter_add_deatil_sub_div">
-                        <TextField
-                          type="text"
-                          label="Enter title"
-                          size="small"
-                          className="slider_value_textbox"
-                        />
-                        <TextField
-                          type="text"
-                          label="Enter formula"
-                          fullWidth
-                          size="small"
-                          className="slider_value_textbox"
-                        />
-                      </div>
-                      <div className="slpiter_add_deatil_sub_div">
-                        <TextField
-                          type="text"
-                          label="Enter Unit"
-                          fullWidth
-                          size="small"
-                          className="slider_value_textbox_number"
-                        />
-                        <TextField
-                          className="slider_value_textbox_number"
-                          type="number"
-                          label="Enter Decimal"
-                          fullWidth
-                          size="small"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div style={{ display: "flex", gap: "20px" }}>
+                {[1, 2, 3, 4].map((block) => (
+                  <SlideValueSelector
+                    key={`S-${block}`}
+                    title={`Second Slide - Value ${block}`}
+                    blockNumber={block}
+                    sideNumber={2}
+                    selectedField={secondSlideSelected[block]}
+                    onSelect={(val) =>
+                      setSecondSlideSelected((prev) => ({
+                        ...prev,
+                        [block]: val,
+                      }))
+                    }
+                    columns={spliterReportColum}
+                    values={secondSlideValues}
+                    setValues={setSecondSlideValues}
+                    errors={
+                      errors[`S-${block}`]
+                        ? { [block]: errors[`S-${block}`] }
+                        : {}
+                    }
+                    setErrors={setErrors}
+                  />
+                ))}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "15px",
+                }}
+              >
+                <Button
+                  onClick={() => setOpen(false)}
+                  variant="contained"
+                  sx={{ mt: 2 }}
+                  style={{ backgroundColor: "#f03d3d" }}
+                >
+                  Close
+                </Button>
+
+                <Button
+                  onClick={handleSave}
+                  variant="contained"
+                  sx={{ mt: 2 }}
+                  style={{ backgroundColor: "rgb(86, 74, 252)" }}
+                >
+                  Save
+                </Button>
               </div>
             </div>
           </Box>

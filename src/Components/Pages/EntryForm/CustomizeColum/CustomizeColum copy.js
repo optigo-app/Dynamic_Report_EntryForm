@@ -27,7 +27,6 @@ const defaultField = {
   IframeTypeId: "",
   ColumnAlign: "left",
   OnHrefNavigate: "",
-  RedirectId: 0,
   // IsVisible: true,
   // DateColumn: false,
   DisplayOrder: "",
@@ -81,10 +80,8 @@ const CustomizeColum = ({
   spId,
   onClose,
   allColumData,
-  redirectionMaster,
+  iframeMaster,
 }) => {
-  console.log("redirectionMaster", redirectionMaster);
-
   const [formData, setFormData] = useState({ ...defaultField });
   const sessionKey = `columnSettings_${spId}_${selectedColumn?.__original?.ColId}`;
   useEffect(() => {
@@ -138,7 +135,6 @@ const CustomizeColum = ({
       HrefLink: formData.Hyperlink,
       OnHrefLinkModel: formData.OnHyperlinkLinkModel,
       OnHrefNavigate: formData.OnHrefNavigate,
-      RedirectId: parseInt(formData.RedirectId),
       IsVisible: 1,
       // DateColumn: formData.DateColumn ? 1 : 0,
       DisplayOrder: Number(formData.DisplayOrder) || null,
@@ -191,13 +187,8 @@ const CustomizeColum = ({
       ColumnFilter: 1,
     };
 
-    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
-
     const payload = {
-      con: JSON.stringify({
-        mode: "updateEditColumnRecord",
-        appuserid: AllData?.LUId,
-      }),
+      con: JSON.stringify({ mode: "updateEditColumnRecord" }),
       p: JSON.stringify(finalPayload),
       f: "DynamicReport ( Update column settings record list )",
     };
@@ -220,8 +211,6 @@ const CustomizeColum = ({
     { name: "Printer", component: <Printer /> },
     { name: "MessageCircle", component: <MessageCircle /> },
   ];
-
-  console.log("formData", formData);
 
   return (
     <div className="Customize_Colum_Full_main">
@@ -506,23 +495,96 @@ const CustomizeColum = ({
                 ))}
             </div>
             <div style={{ display: "flex", gap: "15px", width: "100%" }}>
-              {["SummaryTitle", "SummaryUnit", "Decimal"].map((field) => (
-                <TextField
-                  key={field}
-                  name={field}
-                  variant="outlined"
-                  label={field}
-                  value={formData[field] || ""}
-                  onChange={handleInputChange}
-                  style={{ width: "47.5%" }}
-                  className="customize_colum_input"
-                  InputLabelProps={{
-                    style: {
-                      fontFamily: "Poppins, sans-serif",
-                    },
-                  }}
-                />
-              ))}
+              {["SummaryTitle", "SummaryUnit", "Decimal", "IconName"].map(
+                (field) =>
+                  field === "IconName" ? (
+                    <div
+                      key={field}
+                      style={{
+                        width: "47.5%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <TextField
+                        name={field}
+                        variant="outlined"
+                        label={field}
+                        value={formData[field] || ""}
+                        onChange={handleInputChange}
+                        className="customize_colum_input"
+                        style={{ flex: 1 }}
+                      />
+                      <Tooltip
+                        slotProps={{
+                          tooltip: {
+                            sx: {
+                              bgcolor: "rgb(220 220 220 / 92%)",
+                            },
+                          },
+                        }}
+                        title={
+                          <div
+                            style={{
+                              maxWidth: 250,
+                              color: "black",
+                            }}
+                          >
+                            Enter the icon name (e.g., <b>CirclePlus</b>,{" "}
+                            <b>FaBeer</b>, <b>MdHome</b>).
+                            <br />
+                            <br />
+                            Browse icons here:
+                            <ul style={{ paddingLeft: 16, margin: "4px 0" }}>
+                              <li>
+                                <a
+                                  href="https://lucide.dev/icons/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Lucide Icons
+                                </a>
+                              </li>
+                              <li>
+                                <a
+                                  href="https://react-icons.github.io/react-icons/"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  React Icons
+                                </a>
+                              </li>
+                            </ul>
+                          </div>
+                        }
+                        arrow
+                        placement="top"
+                      >
+                        <InfoOutlinedIcon
+                          color="action"
+                          style={{ cursor: "pointer" }}
+                        />
+                      </Tooltip>
+                    </div>
+                  ) : (
+                    <TextField
+                      key={field}
+                      name={field}
+                      variant="outlined"
+                      label={field}
+                      value={formData[field] || ""}
+                      onChange={handleInputChange}
+                      style={{ width: "47.5%" }}
+                      className="customize_colum_input"
+                      InputLabelProps={{
+                        style: {
+                          fontFamily: "Poppins, sans-serif",
+                        },
+                      }}
+                    />
+                  )
+              )}
             </div>
           </div>
         </div>
@@ -563,44 +625,7 @@ const CustomizeColum = ({
                   ))}
               </div>
               <div style={{ display: "flex", gap: "30px", width: "100%" }}>
-                <FormControl
-                  style={{ width: "60%", marginTop: "10px" }}
-                  size="small"
-                >
-                  <InputLabel
-                    style={{
-                      fontFamily: "Poppins, sans-serif",
-                    }}
-                  >
-                    Enter destination report name
-                  </InputLabel>
-                  <Select
-                    label="Enter destination report name"
-                    name="RedirectId"
-                    value={formData.RedirectId}
-                    onChange={handleInputChange}
-                    style={{
-                      height: 40,
-                      fontSize: 16,
-                    }}
-                    MenuProps={{
-                      PaperProps: {
-                        style: {
-                          maxHeight: 200,
-                        },
-                      },
-                    }}
-                  >
-                    <MenuItem value={0}>--Select--</MenuItem>
-                    {redirectionMaster?.rd1?.map((item) => (
-                      <MenuItem key={item.RedirectId} value={item.RedirectId}>
-                        {item.RedirectPage}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* {["OnHrefNavigate"].map((field) => (
+                {["OnHrefNavigate"].map((field) => (
                   <TextField
                     key={field}
                     name={field}
@@ -616,7 +641,7 @@ const CustomizeColum = ({
                       },
                     }}
                   />
-                ))} */}
+                ))}
               </div>
             </div>
           </div>
@@ -652,17 +677,14 @@ const CustomizeColum = ({
                 }}
               >
                 <MenuItem value="">--Select--</MenuItem>
-                {redirectionMaster?.rd.map((item) => (
+                {iframeMaster.map((item) => (
                   <MenuItem key={item.IframeTypeId} value={item.IframeTypeId}>
                     {item.PopupTitle}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <div
-              className="IconDiv"
-              style={{ display: "flex", gap: "15px", marginTop: "10px" }}
-            >
+            <div className="IconDiv" style={{ display: "flex", gap: "15px" }}>
               {iconOptions.map((icon) => (
                 <div
                   key={icon.name}
@@ -678,8 +700,8 @@ const CustomizeColum = ({
                     borderRadius: "50%",
                     border:
                       formData.IconName === icon.name
-                        ? "2px solid rgb(86, 74, 252)"
-                        : "1px solid gray",
+                        ? "2px solid #007bff"
+                        : "2px solid transparent",
                     background:
                       formData.IconName === icon.name
                         ? "#e3f2ff"
@@ -693,11 +715,9 @@ const CustomizeColum = ({
                   {React.cloneElement(icon.component, {
                     style: {
                       color:
-                        formData.IconName === icon.name
-                          ? "rgb(86, 74, 252)"
-                          : "gray",
-                      width: 20,
-                      height: 20,
+                        formData.IconName === icon.name ? "#007bff" : "gray",
+                      width: 26,
+                      height: 26,
                     },
                   })}
                 </div>

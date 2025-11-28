@@ -48,7 +48,6 @@ const GridMain = () => {
 
     try {
       const decodedCN = decodeBase64(CN);
-      console.log("decodedCN", decodedCN);
       const cookieData = await readAndDecodeCookie(decodedCN);
       if (!cookieData) {
         console.error("Cookie not found or invalid.");
