@@ -6,6 +6,30 @@
   font-family: Arial, sans-serif;
   flex-wrap: wrap;
 
+  .left-form {
+    height: 85vh;
+    overflow: auto;
+    &::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgb(86, 74, 252);
+      border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgb(66, 54, 220);
+    }
+
+    /* 🔹 Firefox */
+    scrollbar-width: thin; /* makes it thinner */
+    scrollbar-color: rgb(86, 74, 252) transparent;
+  }
   .left-form,
   .right-preview,
   .final-json-view {
@@ -29,7 +53,7 @@
 
   .left-form label {
     display: block;
-    margin: 5px 0;
+    margin: 0px;
     font-size: 14px;
   }
 
@@ -61,6 +85,14 @@
     font-family: $fontFamily;
   }
 
+  .chekbox_title_value_top {
+    display: flex;
+    align-items: center;
+    min-width: 120px;
+    font-size: 16px;
+    font-family: $fontFamily;
+  }
+
   .Btn_CustomizeMaster_Model_Cancel {
     font-family: $fontFamily;
     background-color: #f03d3d;
@@ -70,5 +102,65 @@
     font-family: $fontFamily;
     background-color: rgb(86, 74, 252);
     color: white;
+  }
+}
+
+.Customize_Master_Colum_main {
+  padding: 16px;
+
+  .checkbox-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .checkbox-item {
+      width: 50%;
+      display: flex;
+      align-items: center;
+      label {
+        display: flex;
+        align-items: center;
+        span {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+
+  .chart_view_settig_div {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #f9f9f9;
+
+    .chart_item {
+      margin-bottom: 12px;
+      .chart_header {
+        display: flex;
+        align-items: center;
+        span {
+          font-weight: 600;
+          margin-left: 4px;
+        }
+      }
+
+      .chart_fields {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+    }
+  }
+
+  .button-group {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+  }
+
+  .field-dropdown {
+    flex: 1;
+    min-width: 120px;
   }
 }

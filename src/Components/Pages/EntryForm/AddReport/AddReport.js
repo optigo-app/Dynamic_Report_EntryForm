@@ -42,13 +42,21 @@ const AddReport = () => {
   const [selectedColumns, setSelectedColumns] = useState([]);
 
   const [openSnackbar, setOpenSnackbar] = useState(false);
+  const clientIpAddress = sessionStorage.getItem("clientIpAddress");
 
   // 🔹 Get SP list
   useEffect(() => {
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
     const fetchSpList = async () => {
       setLoading(true);
       const bodySpList = {
-        con: JSON.stringify({ id: "", mode: "getSpNameList" }),
+        con: JSON.stringify({
+          id: "",
+          mode: "getSpNameList",
+          appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress
+        }),
         p: "{}",
         f: "DynamicReport ( get sp list )",
       };
@@ -67,14 +75,18 @@ const AddReport = () => {
     fetchSpList();
   }, []);
 
-  // 🔹 Fetch SP columns
   useEffect(() => {
     if (!selectedSp) return;
-
     const fetchSpColum = async () => {
       setLoading(true);
+      let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
       const bodySpList = {
-        con: JSON.stringify({ id: "", mode: "getSpFieldList" }),
+        con: JSON.stringify({
+          id: "",
+          mode: "getSpFieldList",
+          appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress
+        }),
         p: JSON.stringify({ Sp_Name: selectedSp }),
         f: "DynamicReport ( get selected sp columns )",
       };
@@ -87,7 +99,11 @@ const AddReport = () => {
           // If edit mode (existingSp)
           if (existingSp?.ReportId) {
             const body = {
-              con: JSON.stringify({ mode: "getReportAndColumnSettings" }),
+              con: JSON.stringify({
+                mode: "getReportAndColumnSettings",
+                appuserid: AllData?.LUId,
+                IPAddress: clientIpAddress
+              }),
               p: JSON.stringify({ ReportId: existingSp.ReportId }),
               f: "DynamicReport ( get colum data )",
             };
@@ -118,7 +134,6 @@ const AddReport = () => {
     fetchSpColum();
   }, [selectedSp, existingSp?.ReportId]);
 
-  // 🔹 Handle Drag & Drop
   const handleDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) return;
@@ -156,7 +171,6 @@ const AddReport = () => {
     }
   };
 
-  // 🔹 Save
   const handleSave = async () => {
     if (!reportName.trim()) {
       setFormErrors((prev) => ({ ...prev, ReportName: true }));
@@ -181,9 +195,14 @@ const AddReport = () => {
       IsFilterable: 1,
       IsVisible: 1,
     }));
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
 
     const body = {
-      con: JSON.stringify({ mode: "saveReportAndColumns" }),
+      con: JSON.stringify({
+        mode: "saveReportAndColumns",
+        appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress
+      }),
       p: JSON.stringify({
         ReportId: existingSp?.ReportId || 0,
         ReportName: reportName,
@@ -297,7 +316,6 @@ const AddReport = () => {
             overflow: "auto",
           }}
         >
-          {/* LEFT SIDE */}
           <Droppable droppableId="available">
             {(provided) => (
               <div

@@ -3,10 +3,17 @@ import "./App.css";
 import GridMain from "./GridMain";
 import { BrowserRouter, useSearchParams } from "react-router-dom";
 import { DeviceStatusProvider } from "./DeviceStatusContext";
-import { ToastContainer } from "./Utils/Tostify/ToastManager";
+import { getClientIpAddress } from "./Utils/globalFunc";
+import { useEffect } from "react";
+import { ToastContainerS } from "./Utils/Tostify/ToastManager";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function AppWrapper() {
-  
+  useEffect(() => {
+    getClientIpAddress();
+  }, []);
+
   function getBaseName() {
     const path = window.location.pathname;
     const match = path.match(/^\/([^/]+\/[^/]+)/);
@@ -17,6 +24,7 @@ function AppWrapper() {
     <RecoilRoot>
       <DeviceStatusProvider>
         <BrowserRouter basename={getBaseName()}>
+        <ToastContainer />
           <App />
         </BrowserRouter>
       </DeviceStatusProvider>
@@ -27,7 +35,7 @@ function AppWrapper() {
 function App() {
   return (
     <>
-      <ToastContainer />
+      <ToastContainerS />
       <GridMain />
     </>
   );

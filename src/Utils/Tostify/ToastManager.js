@@ -3,7 +3,7 @@ import NotificationToast from "./NotificationToast";
 
 let _showToast;
 
-export const ToastContainer = () => {
+export const ToastContainerS = () => {
   const [toast, setToast] = useState(null);
 
   _showToast = useCallback(({ message, bgColor, fontColor, duration }) => {

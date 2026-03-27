@@ -45,13 +45,17 @@ const AddSpColum = () => {
       },
     ]
   );
-  console.log("existingSpexistingSp", existingSp);
-
+          const clientIpAddress = sessionStorage.getItem("clientIpAddress");
   useEffect(() => {
+      let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
     const fetchMasterOptions = async () => {
       setLoading(true);
       const body = {
-        con: JSON.stringify({ id: "", mode: "getMasterTableList" }),
+        con: JSON.stringify({ id: "", mode: "getMasterTableList",
+          appuserid: AllData?.LUId,
+            IPAddress: clientIpAddress
+         }),
         p: "{}",
         f: "DynamicReport ( get sp list )",
       };
@@ -72,9 +76,13 @@ const AddSpColum = () => {
 
   useEffect(() => {
     if (!existingSp?.SpName || masterOptions.length === 0) return;
+              let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
     const getEditColumData = async () => {
       const body = {
-        con: JSON.stringify({ mode: "getSpFieldList" }),
+        con: JSON.stringify({ mode: "getSpFieldList", appuserid: AllData?.LUId,
+            IPAddress: clientIpAddress
+          }),
         p: JSON.stringify({
           Sp_Name: existingSp?.SpName || 0,
         }),
@@ -183,8 +191,12 @@ const AddSpColum = () => {
       IsVisible: 1,
     }));
 
+              let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
     const body = {
-      con: JSON.stringify({ mode: "saveSpFieldList" }),
+      con: JSON.stringify({ mode: "saveSpFieldList", 
+        appuserid: AllData?.LUId ,
+            IPAddress: clientIpAddress
+       }),
       p: JSON.stringify({
         SpNumber: "",
         SpNameR: spName,
@@ -234,9 +246,6 @@ const AddSpColum = () => {
     updatedErrors.splice(index, 1);
     setErrors(updatedErrors);
   };
-
-  console.log("columnscolumns", columns);
-
   return (
     <div className="add_sp_columdata">
       <LoadingBackdrop isLoading={loading} />

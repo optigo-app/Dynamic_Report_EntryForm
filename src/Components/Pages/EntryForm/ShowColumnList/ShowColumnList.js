@@ -1,4 +1,10 @@
-import React, { forwardRef, useEffect, useState } from "react";
+import React, {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import "./ShowColumnList.scss";
 import {
   IconButton,
@@ -24,6 +30,9 @@ import CustomizeMaster from "../CustomizeMaster/CustomizeMaster";
 import { CallApi } from "../../../../API/CallApi/CallApi";
 import LoadingBackdrop from "../../../../Utils/LoadingBackdrop";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import OtherSetting from "./OtherSetting";
+import SpliterReport from "./SpliterReport";
+import LargeData from "./LargeData";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="right" ref={ref} {...props} timeout={500} />;
@@ -31,15 +40,16 @@ const Transition = forwardRef(function Transition(props, ref) {
 
 const style = {
   position: "absolute",
-  top: "50%",
+  top: "45%",
   left: "50%",
   transform: "translate(-50%, -50%)",
   width: "95%",
   bgcolor: "background.paper",
   border: "none",
+  outline: "none",
   boxShadow: 24,
   borderRadius: 1,
-  p: 4,
+  padding: "10px 10px 20px 20px",
 };
 
 const ShowColumnList = () => {
@@ -54,8 +64,6 @@ const ShowColumnList = () => {
   const [activeItem, setActiveItem] = useState(null);
   const [customizedStatus, setCustomizedStatus] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [otherSettingSnackbarOpen, setOtherSettingSnackbarOpen] =
-    useState(false);
   const [snackbarError, setSnackbarError] = useState(false);
   const [largestLength, setLargestLength] = useState("");
   const [spliterMonthCont, setSpliterMonthCont] = useState("");
@@ -67,6 +75,7 @@ const ShowColumnList = () => {
   const [otherSpliterSideData1, setOtherSpliterSideData1] = useState();
   const [otherSpliterSideData2, setOtherSpliterSideData2] = useState();
   const [iframeMaster, setIframeMaster] = useState();
+  const clientIpAddress = sessionStorage.getItem("clientIpAddress");
 
   useEffect(() => {
     let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
@@ -75,6 +84,7 @@ const ShowColumnList = () => {
         con: JSON.stringify({
           mode: "getOtherSettings",
           appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress,
         }),
         p: JSON.stringify({ ReportId: location.state.ReportId }),
         f: "DynamicReport (get Largedata data)",
@@ -100,6 +110,7 @@ const ShowColumnList = () => {
         con: JSON.stringify({
           mode: "getRedirectMaster",
           appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress,
         }),
         p: JSON.stringify({ ReportId: location.state.ReportId }),
         f: "DynamicReport (get Largedata data)",
@@ -108,7 +119,6 @@ const ShowColumnList = () => {
         const response = await CallApi(body);
         if (response) {
           setIframeMaster(response);
-          console.log("response: ", response);
         }
       } catch (err) {
         console.error("Failed fetching report settings", err);
@@ -123,6 +133,7 @@ const ShowColumnList = () => {
         con: JSON.stringify({
           mode: "getReportAndColumnSettings",
           appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress,
         }),
         p: JSON.stringify({ ReportId: location.state.ReportId }),
         f: "DynamicReport (get colum data)",
@@ -133,10 +144,18 @@ const ShowColumnList = () => {
         if (response?.rd && response.rd.length > 0) {
           const rdData = response.rd[0];
 
+          const sortedResult = (response.rd1 || []).slice().sort((a, b) => {
+            const da = a.DisplayOrder;
+            const db = b.DisplayOrder;
+            if (da == null && db == null) return 0;
+            if (da == null) return 1;
+            if (db == null) return -1;
+            return da - db;
+          });
           setSpData({
             ...rdData,
             master: response?.rd2,
-            result: response.rd1 || [],
+            result: sortedResult,
           });
           setSpliterFirst(rdData?.SpliterFirstPanel || null);
           setSpliterSecond(rdData?.SpliterSecondPanel || null);
@@ -176,6 +195,18 @@ const ShowColumnList = () => {
             }
           }
 
+          if (response?.rd[0]?.SpliterFirstPanelAll) {
+            initialSelected.push("SpliterFirstPanelAll");
+          }
+
+          if (response?.rd[0]?.SpliterSecondPanelAll) {
+            initialSelected.push("SpliterSecondPanelAll");
+          }
+
+          if (response?.rd[0]?.SpliterReportAllDataButton) {
+            initialSelected.push("SpliterReportAllDataButton");
+          }
+
           setAllDateOptionsShow(response?.rd[0]?.ServerSideDateWiseFilter);
           setSelectedCols(initialSelected);
 
@@ -200,10 +231,15 @@ const ShowColumnList = () => {
   const handleToggleFilterOption = async () => {
     const newVal = !allDateOptionsShow;
     setAllDateOptionsShow(newVal);
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
 
     try {
       const body = {
-        con: JSON.stringify({ mode: "updateDateFrameSettingsReportWise" }),
+        con: JSON.stringify({
+          mode: "updateDateFrameSettingsReportWise",
+          appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress,
+        }),
         p: JSON.stringify({
           ReportId: location.state.ReportId,
           ServerSideDateWiseFilter: newVal,
@@ -245,9 +281,14 @@ const ShowColumnList = () => {
         ColId: col.ColId,
         IsVisible: selectedCols.includes(col.HeaderName) ? 1 : 0,
       }));
+      let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
 
       const visibilityBody = {
-        con: JSON.stringify({ mode: "updateColumnVisibility" }),
+        con: JSON.stringify({
+          mode: "updateColumnVisibility",
+          appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress,
+        }),
         p: JSON.stringify({
           ReportId: spData.ReportId,
           IsLargeDataReport: selectedCols.includes("Largest Data Report"),
@@ -263,7 +304,11 @@ const ShowColumnList = () => {
         })),
       };
       const body = {
-        con: JSON.stringify({ mode: "saveDateFrameSettings" }),
+        con: JSON.stringify({
+          mode: "saveDateFrameSettings",
+          appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress,
+        }),
         p: JSON.stringify(payload),
         f: "DynamicReport ( saveDateFrameSettings )",
       };
@@ -279,7 +324,11 @@ const ShowColumnList = () => {
         }
 
         const largeDataBody = {
-          con: JSON.stringify({ mode: "updateLargeDataSettings" }),
+          con: JSON.stringify({
+            mode: "updateLargeDataSettings",
+            appuserid: AllData?.LUId,
+            IPAddress: clientIpAddress,
+          }),
           p: JSON.stringify({
             ReportId: spData?.ReportId,
             LargeDataCount: Number(largestLength),
@@ -303,10 +352,17 @@ const ShowColumnList = () => {
       }
 
       const spliterDataBody = {
-        con: JSON.stringify({ mode: "updateSpliterReportSettings" }),
+        con: JSON.stringify({
+          mode: "updateSpliterReportSettings",
+          appuserid: AllData?.LUId,
+          IPAddress: clientIpAddress,
+        }),
         p: JSON.stringify({
           ReportId: spData?.ReportId,
           IsSpliterReport: selectedCols.includes("Spliter Report") ? 1 : 0,
+          SpliterFirstPanelAll: selectedCols.includes("SpliterFirstPanelAll") ? 1 : 0,
+          SpliterSecondPanelAll: selectedCols.includes("SpliterSecondPanelAll") ? 1 : 0,
+          SpliterReportAllDataButton: selectedCols.includes("SpliterReportAllDataButton") ? 1 : 0,
           SpliterFirstPanel: spliterFirst || "",
           SpliterSecondPanel: spliterSecond || "",
           DateMonthRestriction: spliterMonthCont,
@@ -368,33 +424,82 @@ const ShowColumnList = () => {
 
   const fieldErrors = selectedCols?.filter((col) => !customizedStatus[col]);
 
+  // const handleDragEnd = async (result) => {
+  //   if (!result.destination) return;
+  //   const reordered = Array.from(spData.result);
+  //   const [movedItem] = reordered.splice(result.source.index, 1);
+  //   reordered.splice(result.destination.index, 0, movedItem);
+  //   console.log('reordered: ', reordered);
+  //   reordered.forEach((col, index) => {
+  //     col.DisplayOrder = index + 1;
+  //   });
+  //   setSpData((prev) => ({ ...prev, result: reordered }));
+  //   const payload = {
+  //     ReportId: spData?.ReportId,
+  //     Columns: reordered.map((col) => ({
+  //       ColId: col.ColId,
+  //       IsVisible: col.IsVisible ? 1 : 0,
+  //       DisplayOrder: col.DisplayOrder,
+  //     })),
+  //   };
+  //   let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+  //   const body = {
+  //     con: JSON.stringify({
+  //       mode: "updateDisplayOrderSettings",
+  //       appuserid: AllData?.LUId,
+  //       IPAddress: clientIpAddress,
+  //     }),
+  //     p: JSON.stringify(payload),
+  //     f: "DynamicReport (update display order test)",
+  //   };
+
+  //   try {
+  //     await CallApi(body);
+  //   } catch (err) {
+  //     console.error("Failed to save display order", err);
+  //   }
+  // };
+
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
-    const reordered = Array.from(spData.result);
-    const [movedItem] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, movedItem);
+    setSpData((prev) => {
+      const items = [...prev.result];
 
-    // Update DisplayOrder based on new index
-    reordered.forEach((col, index) => {
-      col.DisplayOrder = index + 1;
+      const [movedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, movedItem);
+
+      const updatedItems = items.map((item, index) => ({
+        ...item,
+        DisplayOrder: index + 1,
+      }));
+      saveDisplayOrder(prev.ReportId, updatedItems);
+
+      return {
+        ...prev,
+        result: updatedItems,
+      };
     });
+  };
 
-    // Update the state properly so UI re-renders
-    setSpData((prev) => ({ ...prev, result: reordered }));
-
-    // Prepare payload for API
+  const saveDisplayOrder = async (reportId, updatedItems) => {
     const payload = {
-      ReportId: spData?.ReportId,
-      Columns: reordered.map((col) => ({
+      ReportId: reportId,
+      Columns: updatedItems.map((col) => ({
         ColId: col.ColId,
         IsVisible: col.IsVisible ? 1 : 0,
         DisplayOrder: col.DisplayOrder,
       })),
     };
 
+    let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
+
     const body = {
-      con: JSON.stringify({ mode: "updateDisplayOrderSettings" }),
+      con: JSON.stringify({
+        mode: "updateDisplayOrderSettings",
+        appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress,
+      }),
       p: JSON.stringify(payload),
       f: "DynamicReport (update display order test)",
     };
@@ -409,258 +514,6 @@ const ShowColumnList = () => {
   const [open, setOpen] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-
-  const [firstSlideValues, setFirstSlideValues] = useState({
-    1: {},
-    2: {},
-    3: {},
-    4: {},
-  });
-  const [secondSlideValues, setSecondSlideValues] = useState({
-    1: {},
-    2: {},
-    3: {},
-    4: {},
-  });
-
-  const [firstSlideSelected, setFirstSlideSelected] = useState({
-    1: "",
-    2: "",
-    3: "",
-    4: "",
-  });
-  const [secondSlideSelected, setSecondSlideSelected] = useState({
-    1: "",
-    2: "",
-    3: "",
-    4: "",
-  });
-
-  const [errors, setErrors] = useState({});
-  const handleSave = async () => {
-    setLoading(true);
-    let newErrors = {};
-    Object.entries(firstSlideValues).forEach(([block, val]) => {
-      if (firstSlideSelected[block] && !val.Title?.trim()) {
-        newErrors[`F-${block}`] = "Title is required";
-      }
-    });
-    Object.entries(secondSlideValues).forEach(([block, val]) => {
-      if (secondSlideSelected[block] && !val.Title?.trim()) {
-        newErrors[`S-${block}`] = "Title is required";
-      }
-    });
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) {
-      setLoading(false);
-      return;
-    }
-    const spliterData = [];
-    Object.entries(firstSlideValues).forEach(([block, val]) => {
-      if (firstSlideSelected[block]) {
-        spliterData.push({
-          SideNumber: 1,
-          BlockNumber: Number(block),
-          SelectedField: firstSlideSelected[block],
-          Title: val.Title || "",
-          Unit: val.Unit || "",
-          Formula: val.Formula || "",
-          DecimalValue: val.DecimalValue || "0",
-        });
-      }
-    });
-    Object.entries(secondSlideValues).forEach(([block, val]) => {
-      if (secondSlideSelected[block]) {
-        spliterData.push({
-          SideNumber: 2,
-          BlockNumber: Number(block),
-          SelectedField: secondSlideSelected[block],
-          Title: val.Title || "",
-          Unit: val.Unit || "",
-          Formula: val.Formula || "",
-          DecimalValue: val.DecimalValue || "0",
-        });
-      }
-    });
-
-    const sliderDataBody = {
-      con: JSON.stringify({ mode: "saveSpliterData" }),
-      p: JSON.stringify({
-        ReportId: spData?.ReportId,
-        SpliterData: spliterData,
-      }),
-      f: "DynamicReport ( saveSpliterData )",
-    };
-    console.log("API Payload:", sliderDataBody);
-    try {
-      const response = await CallApi(sliderDataBody);
-      if (response?.rd[0]?.stat == 1) {
-        setOtherSettingSnackbarOpen(true);
-        setTimeout(() => {
-          setOtherSettingSnackbarOpen(false);
-        }, 4000);
-      }
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const SlideValueSelector = ({
-    title,
-    blockNumber,
-    sideNumber,
-    selectedField,
-    onSelect,
-    columns,
-    values,
-    setValues,
-    errors,
-    setErrors,
-  }) => {
-    const handleCheckboxChange = (fieldName) => {
-      if (selectedField === fieldName) {
-        onSelect(""); // unselect
-        setValues((prev) => ({
-          ...prev,
-          [blockNumber]: { ...prev[blockNumber], SelectedField: "" },
-        }));
-      } else {
-        onSelect(fieldName);
-        setValues((prev) => ({
-          ...prev,
-          [blockNumber]: { ...prev[blockNumber], SelectedField: fieldName },
-        }));
-      }
-    };
-
-    const handleInputChange = (key, value) => {
-      setValues((prev) => ({
-        ...prev,
-        [blockNumber]: { ...prev[blockNumber], [key]: value },
-      }));
-    };
-
-    return (
-      <div style={{ width: "22%" }}>
-        <p className="sliper_top_title">{title}</p>
-
-        <div className="sliter_option_main_div">
-          <div className="spliter_optios_main_div">
-            {columns?.map((col) => (
-              <div
-                key={`col-${col.ColId}`}
-                className="column_row sub_row"
-                style={{ display: "flex", alignItems: "center" }}
-              >
-                <Checkbox
-                  checked={selectedField === col.FieldName}
-                  onChange={() => handleCheckboxChange(col.FieldName)}
-                  className="spliter_chekbox_optins"
-                />
-                <Typography className="column_label">
-                  {col.HeaderName}
-                </Typography>
-              </div>
-            ))}
-          </div>
-
-          <div className="spliter_add_deatil_main">
-            <div className="slpiter_add_deatil_sub_div">
-              <TextField
-                type="text"
-                label="Enter title"
-                size="small"
-                fullWidth
-                value={values[blockNumber]?.Title || ""}
-                onChange={(e) => handleInputChange("Title", e.target.value)}
-                error={!!errors[blockNumber]}
-                helperText={errors[blockNumber]}
-              />
-              <TextField
-                type="text"
-                label="Enter formula"
-                size="small"
-                fullWidth
-                value={values[blockNumber]?.Formula || ""}
-                onChange={(e) => handleInputChange("Formula", e.target.value)}
-              />
-            </div>
-
-            <div className="slpiter_add_deatil_sub_div">
-              <TextField
-                type="text"
-                label="Enter Unit"
-                size="small"
-                fullWidth
-                value={values[blockNumber]?.Unit || ""}
-                onChange={(e) => handleInputChange("Unit", e.target.value)}
-              />
-              <TextField
-                type="number"
-                label="Enter Decimal"
-                size="small"
-                fullWidth
-                value={values[blockNumber]?.DecimalValue || ""}
-                onChange={(e) =>
-                  handleInputChange("DecimalValue", e.target.value)
-                }
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  useEffect(() => {
-    if (!otherSpliterSideData1) return;
-
-    const mapSlideData = (data, setSelected, setValues) => {
-      const newSelected = {};
-      const newValues = {};
-
-      Object.entries(data).forEach(([key, value]) => {
-        if (value?.length > 0) {
-          let blockNumber = 0;
-
-          if (key === "firstSlideFirstData") blockNumber = 1;
-          if (key === "firstSlideSecondData") blockNumber = 2;
-          if (key === "firstSlideThirdData") blockNumber = 3;
-          if (key === "firstSlideFourthData") blockNumber = 4;
-
-          const row = value[0];
-
-          newSelected[blockNumber] = row.selectedField;
-          newValues[blockNumber] = {
-            Title: row.title || "",
-            Unit: row.unit || "",
-            Formula: row.formula || "",
-            DecimalValue: row.decimal || "",
-          };
-        }
-      });
-
-      // Merge with defaults (to keep other blocks empty)
-      setSelected((prev) => ({ ...prev, ...newSelected }));
-      setValues((prev) => ({ ...prev, ...newValues }));
-    };
-
-    // Fill FIRST SLIDE
-    mapSlideData(
-      otherSpliterSideData1,
-      setFirstSlideSelected,
-      setFirstSlideValues
-    );
-
-    // Fill SECOND SLIDE
-    if (otherSpliterSideData2)
-      mapSlideData(
-        otherSpliterSideData2,
-        setSecondSlideSelected,
-        setSecondSlideValues
-      );
-  }, [otherSpliterSideData1, otherSpliterSideData2]);
 
   return (
     <div>
@@ -728,72 +581,84 @@ const ShowColumnList = () => {
                               {...provided.droppableProps}
                               className="droppable-columns"
                             >
-                              {spData?.result?.map((col, index) => {
-                                const label = col.HeaderName;
-                                const isChecked = selectedCols.includes(label);
-                                const displayNumber =
-                                  col.DisplayOrder ?? index + 1;
+                              {spData?.result
+                                ?.slice()
+                                ?.sort((a, b) => {
+                                  const da = a.DisplayOrder;
+                                  const db = b.DisplayOrder;
+                                  if (da == null && db == null) return 0;
+                                  if (da == null) return 1;
+                                  if (db == null) return -1;
+                                  return da - db;
+                                })
+                                ?.map((col, index) => {
+                                  const label = col.HeaderName;
+                                  const isChecked =
+                                    selectedCols.includes(label);
 
-                                return (
-                                  <Draggable
-                                    key={col.ColId}
-                                    draggableId={col.ColId.toString()}
-                                    index={index}
-                                  >
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        className={`column_row ${
-                                          snapshot.isDragging ? "dragging" : ""
-                                        }`}
-                                        style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          background: snapshot.isDragging
-                                            ? "#f1f1ff"
-                                            : "white",
-                                          border: "1px solid #ddd",
-                                          borderRadius: "6px",
-                                          padding: "6px 10px",
-                                          marginBottom: "6px",
-                                          ...provided.draggableProps.style,
-                                        }}
-                                      >
-                                        <Checkbox
-                                          checked={isChecked}
-                                          onChange={() =>
-                                            handleCheckboxChange(label)
-                                          }
-                                        />
-                                        <Typography className="column_label">
-                                          {col.HeaderName}
-                                        </Typography>
-                                        {isChecked && (
-                                          <>
-                                            <Button
-                                              variant="outlined"
-                                              size="small"
-                                              onClick={() =>
-                                                openColCustomize(col)
-                                              }
-                                              style={{
-                                                marginLeft: "auto",
-                                                color: "rgb(86, 74, 252)",
-                                                borderColor: "rgb(86, 74, 252)",
-                                              }}
-                                              className="Btn_Customize"
-                                            >
-                                              Customize
-                                            </Button>
-                                          </>
-                                        )}
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                );
-                              })}
+                                  return (
+                                    <Draggable
+                                      key={col.ColId}
+                                      draggableId={col.ColId.toString()}
+                                      index={index}
+                                    >
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          className={`column_row ${snapshot.isDragging
+                                            ? "dragging"
+                                            : ""
+                                            }`}
+                                          style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            background: snapshot.isDragging
+                                              ? "#f1f1ff"
+                                              : "white",
+                                            border: "1px solid #ddd",
+                                            borderRadius: "6px",
+                                            padding: "6px 10px",
+                                            marginBottom: "6px",
+                                            ...provided.draggableProps.style,
+                                          }}
+                                        >
+                                          <Checkbox
+                                            checked={isChecked}
+                                            onChange={() =>
+                                              handleCheckboxChange(label)
+                                            }
+                                          />
+                                          <Typography className="column_label">
+                                            {col.HeaderName}
+                                            {/* - {col?.DisplayOrder} */}
+                                          </Typography>
+                                          {isChecked && (
+                                            <>
+                                              <Button
+                                                variant="outlined"
+                                                size="small"
+                                                onClick={() =>
+                                                  openColCustomize(col)
+                                                }
+                                                style={{
+                                                  marginLeft: "auto",
+                                                  color: "rgb(86, 74, 252)",
+                                                  borderColor:
+                                                    "rgb(86, 74, 252)",
+                                                }}
+                                                className="Btn_Customize"
+                                              >
+                                                Customize
+                                              </Button>
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  );
+                                })}
                               {provided.placeholder}
                             </div>
                           );
@@ -811,7 +676,7 @@ const ShowColumnList = () => {
                 </Typography>
               )}
             </div>
-            <div className="showList_LargeMain">
+            {/* <div className="showList_LargeMain">
               <div
                 className={
                   selectedCols?.includes("Spliter Report")
@@ -847,26 +712,37 @@ const ShowColumnList = () => {
                   </div>
                 )}
                 {!selectedCols?.includes("Largest Data Report") && (
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <Checkbox
-                      checked={selectedCols.includes("Spliter Report")}
-                      onChange={() => handleCheckboxChange("Spliter Report")}
-                    />
-                    <Typography className="column_label">
-                      Spliter Report
-                    </Typography>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <Checkbox
+                        checked={selectedCols.includes("Spliter Report")}
+                        onChange={() => handleCheckboxChange("Spliter Report")}
+                      />
+                      <Typography className="column_label">
+                        Spliter Report
+                      </Typography>
+                      {selectedCols?.includes("Spliter Report") && (
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            type="number"
+                            label="Enter Month Restriction"
+                            fullWidth
+                            size="small"
+                            value={spliterMonthCont}
+                            onChange={(e) => setSpliterMonthCont(e.target.value)}
+                            style={{ margin: "0px 15px" }}
+                          />
+                        </Grid>
+                      )}
+                    </div>
                     {selectedCols?.includes("Spliter Report") && (
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          type="number"
-                          label="Enter Month Restriction"
-                          fullWidth
-                          size="small"
-                          value={spliterMonthCont}
-                          onChange={(e) => setSpliterMonthCont(e.target.value)}
-                          style={{ margin: "0px 15px" }}
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <Checkbox
+                          checked={selectedCols.includes("SpliterReportAllDataButton")}
+                          onChange={() => handleCheckboxChange("SpliterReportAllDataButton")}
                         />
-                      </Grid>
+                        All Data Button
+                      </div>
                     )}
                   </div>
                 )}
@@ -896,9 +772,9 @@ const ShowColumnList = () => {
                                 prev.map((c) =>
                                   c.ColId === col.ColId
                                     ? {
-                                        ...c,
-                                        IsLargeDataGroup: e.target.checked,
-                                      }
+                                      ...c,
+                                      IsLargeDataGroup: e.target.checked,
+                                    }
                                     : c
                                 )
                               );
@@ -926,7 +802,18 @@ const ShowColumnList = () => {
                         >
                           Select For First Slide
                         </p>
-                        <div className="largest_columns_group">
+
+                        <div
+                          className="column_row sub_row"
+                          style={{ display: "flex", alignItems: "center" }}
+                        >
+                          <Checkbox
+                            checked={selectedCols.includes("SpliterFirstPanelAll")}
+                            onChange={() => handleCheckboxChange("SpliterFirstPanelAll")}
+                          />
+                          <Typography className="column_label">ALL</Typography>
+                        </div>
+                        <div className="largest_columns_group" style={{ height: '60vh' }}>
                           {largeDataColum?.map((col) => (
                             <div
                               key={`ldr1-${col.ColId}`}
@@ -957,7 +844,18 @@ const ShowColumnList = () => {
                         >
                           Select For Second Slide
                         </p>
-                        <div className="largest_columns_group">
+
+                        <div
+                          className="column_row sub_row"
+                          style={{ display: "flex", alignItems: "center" }}
+                        >
+                          <Checkbox
+                            checked={selectedCols.includes("SpliterSecondPanelAll")}
+                            onChange={() => handleCheckboxChange("SpliterSecondPanelAll")}
+                          />
+                          <Typography className="column_label">ALL</Typography>
+                        </div>
+                        <div className="largest_columns_group" style={{ height: '60vh' }}>
                           {largeDataColum?.map((col) => (
                             <div
                               key={`ldr2-${col.ColId}`}
@@ -1041,7 +939,47 @@ const ShowColumnList = () => {
                   )}
                 </div>
               )}
-            </div>
+            </div> */}
+            <LargeData
+              selectedCols={selectedCols}
+              handleCheckboxChange={handleCheckboxChange}
+              largestLength={largestLength}
+              handleDateOptionChange={handleDateOptionChange}
+              setLargestLength={setLargestLength}
+              spliterMonthCont={spliterMonthCont}
+              setSpliterMonthCont={setSpliterMonthCont}
+              largeDataColum={largeDataColum}
+              spliterFirst={spliterFirst}
+              setLargeDataColum={setLargeDataColum}
+              handleSecondSelect={handleSecondSelect}
+              handleFirstSelect={handleFirstSelect}
+              spliterSecond={spliterSecond}
+              handleOpen={handleOpen}
+              allDateOptionsShow={allDateOptionsShow}
+              handleToggleFilterOption={handleToggleFilterOption}
+              allDateOptions={allDateOptions}
+              selectedDateOptions={selectedDateOptions}
+            />
+             <SpliterReport
+              selectedCols={selectedCols}
+              handleCheckboxChange={handleCheckboxChange}
+              largestLength={largestLength}
+              handleDateOptionChange={handleDateOptionChange}
+              setLargestLength={setLargestLength}
+              spliterMonthCont={spliterMonthCont}
+              setSpliterMonthCont={setSpliterMonthCont}
+              largeDataColum={largeDataColum}
+              spliterFirst={spliterFirst}
+              setLargeDataColum={setLargeDataColum}
+              handleSecondSelect={handleSecondSelect}
+              handleFirstSelect={handleFirstSelect}
+              spliterSecond={spliterSecond}
+              handleOpen={handleOpen}
+              allDateOptionsShow={allDateOptionsShow}
+              handleToggleFilterOption={handleToggleFilterOption}
+              allDateOptions={allDateOptions}
+              selectedDateOptions={selectedDateOptions}
+            />
           </div>
         )}
         {!loading && (
@@ -1064,7 +1002,7 @@ const ShowColumnList = () => {
           TransitionComponent={Transition}
           PaperProps={{
             sx: {
-              width: activeItem?.kind === "master" ? 400 : "80vw",
+              width: activeItem?.kind === "master" ? 700 : "80vw",
             },
           }}
         >
@@ -1080,6 +1018,7 @@ const ShowColumnList = () => {
                 initialData={spData.master}
                 spId={activeItem.spId}
                 onClose={closeEditor}
+                spData={spData}
               />
             ) : activeItem?.kind === "column" ? (
               <CustomizeColum
@@ -1088,6 +1027,21 @@ const ShowColumnList = () => {
                 onClose={closeEditor}
                 allColumData={spData?.result}
                 redirectionMaster={iframeMaster}
+                onSave={(updatedColumn) => {
+                  const newResult = spData.result.map((col) =>
+                    col.ColId === updatedColumn.ColId
+                      ? { ...col, ...updatedColumn }
+                      : col
+                  );
+                  setSpData((prev) => ({ ...prev, result: newResult }));
+                  setSelectedCols((prev) => {
+                    if (!prev.includes(updatedColumn.HeaderName)) {
+                      return [...prev, updatedColumn.HeaderName];
+                    }
+                    return prev;
+                  });
+                }}
+                customizeMasterGroupCheckBox={spData?.GroupCheckBox}
               />
             ) : null}
           </DialogContent>
@@ -1104,16 +1058,6 @@ const ShowColumnList = () => {
         </Snackbar>
 
         <Snackbar
-          open={otherSettingSnackbarOpen}
-          autoHideDuration={1200}
-          onClose={() => setOtherSettingSnackbarOpen(false)}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert severity="success" sx={{ width: "100%" }}>
-            Other Spliter Setting Saved Successfully.
-          </Alert>
-        </Snackbar>
-        <Snackbar
           open={snackbarError}
           autoHideDuration={3000}
           onClose={() => setSnackbarError(false)}
@@ -1127,87 +1071,14 @@ const ShowColumnList = () => {
         <Modal open={open} onClose={handleClose}>
           <Box sx={style}>
             <LoadingBackdrop isLoading={loading} />
-            <div>
-              <div style={{ display: "flex", gap: "20px" }}>
-                {[1, 2, 3, 4].map((block) => (
-                  <SlideValueSelector
-                    key={`F-${block}`}
-                    title={`First Slide - Value ${block}`}
-                    blockNumber={block}
-                    sideNumber={1}
-                    selectedField={firstSlideSelected[block]}
-                    onSelect={(val) =>
-                      setFirstSlideSelected((prev) => ({
-                        ...prev,
-                        [block]: val,
-                      }))
-                    }
-                    columns={spliterReportColum}
-                    values={firstSlideValues}
-                    setValues={setFirstSlideValues}
-                    errors={
-                      errors[`F-${block}`]
-                        ? { [block]: errors[`F-${block}`] }
-                        : {}
-                    }
-                    setErrors={setErrors}
-                  />
-                ))}
-              </div>
-
-              <div style={{ display: "flex", gap: "20px" }}>
-                {[1, 2, 3, 4].map((block) => (
-                  <SlideValueSelector
-                    key={`S-${block}`}
-                    title={`Second Slide - Value ${block}`}
-                    blockNumber={block}
-                    sideNumber={2}
-                    selectedField={secondSlideSelected[block]}
-                    onSelect={(val) =>
-                      setSecondSlideSelected((prev) => ({
-                        ...prev,
-                        [block]: val,
-                      }))
-                    }
-                    columns={spliterReportColum}
-                    values={secondSlideValues}
-                    setValues={setSecondSlideValues}
-                    errors={
-                      errors[`S-${block}`]
-                        ? { [block]: errors[`S-${block}`] }
-                        : {}
-                    }
-                    setErrors={setErrors}
-                  />
-                ))}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: "15px",
-                }}
-              >
-                <Button
-                  onClick={() => setOpen(false)}
-                  variant="contained"
-                  sx={{ mt: 2 }}
-                  style={{ backgroundColor: "#f03d3d" }}
-                >
-                  Close
-                </Button>
-
-                <Button
-                  onClick={handleSave}
-                  variant="contained"
-                  sx={{ mt: 2 }}
-                  style={{ backgroundColor: "rgb(86, 74, 252)" }}
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
+            <OtherSetting
+              setLoading={setLoading}
+              spData={spData}
+              otherSpliterSideData1={otherSpliterSideData1}
+              otherSpliterSideData2={otherSpliterSideData2}
+              spliterReportColum={spliterReportColum}
+              setOpen={setOpen}
+            />
           </Box>
         </Modal>
       </div>

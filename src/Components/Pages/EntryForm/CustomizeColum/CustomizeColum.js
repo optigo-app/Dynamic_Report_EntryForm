@@ -10,9 +10,10 @@ import {
   Tooltip,
 } from "@mui/material";
 import "./CustomizeColum.scss";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { CallApi } from "../../../../API/CallApi/CallApi";
 import { MessageCircle, NotebookPen, Printer } from "lucide-react";
+import ColorPickerPanel from "./ColorPickerPanel/ColorPickerPanel";
+import { toast } from "react-toastify";
 
 const defaultField = {
   ColId: null,
@@ -28,8 +29,6 @@ const defaultField = {
   ColumnAlign: "left",
   OnHrefNavigate: "",
   RedirectId: 0,
-  // IsVisible: true,
-  // DateColumn: false,
   DisplayOrder: "",
   FontSize: 10,
   DefaultSort: "normall",
@@ -37,14 +36,15 @@ const defaultField = {
   BackgroundColor: "",
   FontColor: "",
   BorderRadius: "",
-  Decimal: "",
+  SummaryValueKey: "",
   SummaryTitle: "",
+  SummeryOrder: "",
   SummaryUnit: "",
   IconName: "",
   FriendlyName: "",
   ColumnDecimal: "",
-  GrupChekBox: false,
-  DefaultGrupChekBox: false,
+  GroupChekBox: false,
+  DefaultGroupChekBox: false,
   GroupColumnImageView: false,
   ActionFilter: false,
   CopyButton: false,
@@ -52,13 +52,14 @@ const defaultField = {
   ImageColumn: false,
   IsPriorityColumn: false,
   PriorityColorColumn: false,
+  CurrencyColumn: false,
+  IsShowDateWithTime: false,
   ActionMasterName: "",
   DateTimeFrame: 0,
 };
 
 const defaultFieldFilter = {
   NormalFilter: false,
-  // DateRangeFilter: false,
   MultiSelection: false,
   RangeFilter: false,
   SuggestionFilter: false,
@@ -69,11 +70,20 @@ const defaultFieldFilter = {
 const defaultFieldSummury = {
   Summary: false,
   SummaryValueFormated: false,
+  UniqueCountSummury: false,
 };
 
 const defaultFieldNavigate = {
-  Hyperlink: false,
-  // OnHyperlinkLinkModel: false,
+  HrefLink: false,
+  HyperlinkShowButton: false
+};
+
+const defaultColorPicker = {
+  "IsPositiveNagativeColor": 0,
+  "PvFColor": null,
+  "PvBgColor": null,
+  "NvFColor": null,
+  "NvBgColor": null
 };
 
 const CustomizeColum = ({
@@ -82,27 +92,31 @@ const CustomizeColum = ({
   onClose,
   allColumData,
   redirectionMaster,
+  onSave,
+  customizeMasterGroupCheckBox
 }) => {
-  console.log("redirectionMaster", redirectionMaster);
-
+  const clientIpAddress = sessionStorage.getItem("clientIpAddress");
   const [formData, setFormData] = useState({ ...defaultField });
-  const sessionKey = `columnSettings_${spId}_${selectedColumn?.__original?.ColId}`;
+  const [colorPicker, setColorPicker] = useState({ ...defaultColorPicker });
   useEffect(() => {
-    const saved = sessionStorage.getItem(sessionKey);
-    if (saved) {
-      setFormData(JSON.parse(saved));
-    } else if (selectedColumn) {
-      const base = selectedColumn.__original || selectedColumn;
-      setFormData((prev) => ({
-        ...prev,
-        ...base,
-        ReportId: spId,
-      }));
-    } else {
-      setFormData({ ...defaultField, ReportId: spId });
-    }
-  }, [selectedColumn, spId, sessionKey]);
-  console.log("allColumdata", allColumData);
+    const base = selectedColumn?.__original || selectedColumn;
+    setFormData((prev) => ({
+      ...prev,
+      ...base,
+      ReportId: spId,
+      IsInFilterSection: base?.IsInFilterSection ? 1 : 0,
+      IsOnScreenFilter: base?.IsOnScreenFilter ? 1 : 0,
+    }));
+
+    setColorPicker({
+      IsPositiveNagativeColor: base?.IsPositiveNagativeColor ?? 0,
+      PvFColor: base?.PvFColor ?? "#000000",
+      PvBgColor: base?.PvBgColor ?? "#00ff00",
+      NvFColor: base?.NvFColor ?? "#ff0000",
+      NvBgColor: base?.NvBgColor ?? "#ffff00",
+    });
+
+  }, [selectedColumn, spId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -111,7 +125,18 @@ const CustomizeColum = ({
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+
+    if (name === "GroupChekBox" && checked && !customizeMasterGroupCheckBox) {
+      toast.warning("First enable GroupCheckBox in Report Options", {
+        position: "top-center",
+      });
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: checked,
+    }));
   };
 
   const saveData = async () => {
@@ -119,8 +144,6 @@ const CustomizeColum = ({
       alert("Header Name and Field Name are required");
       return;
     }
-
-    console.log("formDataformData", formData);
 
     const basePayload = {
       ColId: formData.ColId,
@@ -135,13 +158,11 @@ const CustomizeColum = ({
       HeaderAlign: formData.HeaderAlign,
       IframeTypeId: formData.IframeTypeId,
       ColumnAlign: formData.ColumnAlign,
-      HrefLink: formData.Hyperlink,
-      OnHrefLinkModel: formData.OnHyperlinkLinkModel,
       OnHrefNavigate: formData.OnHrefNavigate,
       RedirectId: parseInt(formData.RedirectId),
       IsVisible: 1,
       // DateColumn: formData.DateColumn ? 1 : 0,
-      DisplayOrder: Number(formData.DisplayOrder) || null,
+      DisplayOrder: formData.DisplayOrder,
       FontSize: parseInt(formData.FontSize) || 12,
       DefaultSort: formData.DefaultSort || "normall",
       TwoColumnData: formData.TwoColumnData || "Select",
@@ -149,10 +170,13 @@ const CustomizeColum = ({
       FontColor: formData.FontColor,
       BorderRadius: Number(formData.BorderRadius) || 0,
       CopyButton: formData.CopyButton ? 1 : 0,
-      GrupChekBox: formData.GrupChekBox ? 1 : 0,
-      DefaultGrupChekBox: formData.DefaultGrupChekBox ? 1 : 0,
+      GrupChekBox: formData.GroupChekBox ? 1 : 0,
+      DefaultGrupChekBox: formData.DefaultGroupChekBox ? 1 : 0,
       IsPriorityColumn: formData.IsPriorityColumn ? 1 : 0,
       PriorityColorColumn: formData.PriorityColorColumn ? 1 : 0,
+      IsCurrency: formData.CurrencyColumn ? 1 : 0,
+      IsShowDateWithTime: formData.IsShowDateWithTime ? 1 : 0,
+      IsUniqueCount: formData.UniqueCountSummury ? 1 : 0,
       ActionFilter: formData.ActionFilter ? 1 : 0,
       ActionMasterName: formData.ActionMasterName,
       IsLargeDataGroup: formData.IsLargeDataGroup ? 1 : 0,
@@ -174,29 +198,42 @@ const CustomizeColum = ({
       SuggestionFilter: formData.SuggestionFilter ? 1 : 0,
       SelectDropdownFilter: formData.SelectDropdownFilter ? 1 : 0,
       ServerSideFilter: formData.ServerSideFilter ? 1 : 0,
+
     };
 
     const summaryPayload = {
       Summary: formData.Summary ? 1 : 0,
       SummaryValueFormated: formData.SummaryValueFormated ? 1 : 0,
-      SummaryValueKey: formData.Decimal || null,
+      SummaryValueKey: formData.SummaryValueKey || null,
       SummaryTitle: formData.SummaryTitle || null,
+      SummeryOrder: formData.SummeryOrder || null,
       SummaryUnit: formData.SummaryUnit || null,
+    };
+
+    const defaultFieldNavigate = {
+      HrefLink: formData.HrefLink,
+      HyperlinkShowButton: formData.HyperlinkShowButton,
+      OnHrefLinkModel: formData.OnHyperlinkLinkModel,
+      // OnHyperlinkLinkModel: false,
     };
 
     const finalPayload = {
       ...basePayload,
       ...filterPayload,
       ...summaryPayload,
+      ...defaultFieldNavigate,
       ColumnFilter: 1,
+      IsInFilterSection: formData.IsInFilterSection || 0, // 0 if not selected
+      IsOnScreenFilter: formData.IsOnScreenFilter || 0,     // 0 if not selected
+      ...colorPicker
     };
 
     let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
-
     const payload = {
       con: JSON.stringify({
         mode: "updateEditColumnRecord",
         appuserid: AllData?.LUId,
+        IPAddress: clientIpAddress
       }),
       p: JSON.stringify(finalPayload),
       f: "DynamicReport ( Update column settings record list )",
@@ -204,10 +241,13 @@ const CustomizeColum = ({
 
     try {
       const res = await CallApi(payload);
-      if (formData?.ColId) {
-        sessionStorage.setItem(sessionKey, JSON.stringify(formData));
+      if (onSave) {
+        onSave({
+          ...formData,
+          ...colorPicker,
+          IsPositiveNagativeColor: colorPicker.IsPositiveNagativeColor
+        });
       }
-
       if (onClose) onClose();
     } catch (err) {
       console.error("❌ Failed updating column", err);
@@ -221,12 +261,10 @@ const CustomizeColum = ({
     { name: "MessageCircle", component: <MessageCircle /> },
   ];
 
-  console.log("formData", formData);
-
   return (
     <div className="Customize_Colum_Full_main">
       <div className="Customize_Colum_main">
-        <div style={{ display: "flex", flexWrap: "wrap", columnGap: "10px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
           {[
             "HeaderName",
             "FieldName",
@@ -264,6 +302,7 @@ const CustomizeColum = ({
             display: "flex",
             gap: "10px",
             width: "100%",
+            height: "50px",
           }}
         >
           <FormControl style={{ width: "20%", height: "30px" }} size="small">
@@ -429,6 +468,12 @@ const CustomizeColum = ({
         <div style={{ display: "flex", flexWrap: "wrap" }}>
           {Object.keys(defaultField)
             .filter((key) => typeof defaultField[key] === "boolean")
+            .filter((key) => {
+              if (key === "IsShowDateWithTime") {
+                return formData?.ColumnType === "Date";
+              }
+              return true;
+            })
             .map((key) => (
               <label
                 key={key}
@@ -442,7 +487,7 @@ const CustomizeColum = ({
                 <span className="chekbox_title_value">{key}</span>
                 <Checkbox
                   name={key}
-                  checked={formData[key] || false}
+                  checked={!!formData[key]}
                   onChange={handleCheckboxChange}
                   style={{ margin: "0px", padding: "0px" }}
                 />
@@ -450,30 +495,65 @@ const CustomizeColum = ({
             ))}
         </div>
 
-        <div style={{ borderTop: "1px solid lightgray", width: "100%" }}>
-          <p className="other_title">Filter Options</p>
-          <div style={{ display: "flex", gap: "30px" }}>
-            {Object.keys(defaultFieldFilter)
-              .filter((key) => typeof defaultFieldFilter[key] === "boolean")
-              .map((key) => (
-                <label
-                  key={key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "5px 0",
-                    gap: "10px",
-                  }}
-                >
+        <div style={{ display: 'flex', width: '100%', borderTop: "1px solid lightgray", }}>
+          <div style={{ width: "50%" }}>
+            <p className="other_title">Filter Options</p>
+            <div style={{ display: "flex", gap: "30px", marginBottom: "15px", flexWrap: "wrap" }}>
+              {["IsInFilterSection", "IsOnScreenFilter"].map((key, index) => (
+                <div key={key} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span className="chekbox_title_value">{key}</span>
-                  <Checkbox
-                    name={key}
-                    checked={formData[key] || false}
-                    onChange={handleCheckboxChange}
-                    style={{ margin: "0px", padding: "0px" }}
-                  />
-                </label>
+                  <div
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        IsInFilterSection: key === "IsInFilterSection" ? 1 : 0,
+                        IsOnScreenFilter: key === "IsOnScreenFilter" ? 1 : 0,
+                      }))
+                    }
+                    style={{
+                      width: "15px",
+                      height: "15px",
+                      borderRadius: "50%",
+                      border: "2px solid #766ef3",
+                      background: formData[key] === 1 ? "#7d74ff" : "white",
+                      cursor: "pointer",
+                    }}
+                  ></div>
+                </div>
               ))}
+            </div>
+
+            <div style={{ gap: "30px" }}>
+              {Object.keys(defaultFieldFilter)
+                .filter((key) => typeof defaultFieldFilter[key] === "boolean")
+                .map((key) => (
+                  <label
+                    key={key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "5px 0",
+                      gap: "10px",
+                      width: 'fit-content',
+                    }}
+                  >
+                    <span className="chekbox_title_value" style={{ minWidth: '180px' }}>{key}</span>
+                    <Checkbox
+                      name={key}
+                      checked={formData[key] || false}
+                      onChange={handleCheckboxChange}
+                      style={{ margin: "0px", padding: "0px" }}
+                    />
+                  </label>
+                ))}
+            </div>
+          </div>
+          <div>
+            <p className="other_title">Positive & Negative Color</p>
+            <ColorPickerPanel
+              value={colorPicker}
+              onChange={(val) => setColorPicker(val)}
+            />
           </div>
         </div>
 
@@ -506,12 +586,17 @@ const CustomizeColum = ({
                 ))}
             </div>
             <div style={{ display: "flex", gap: "15px", width: "100%" }}>
-              {["SummaryTitle", "SummaryUnit", "Decimal"].map((field) => (
+              {[
+                "SummaryTitle",
+                "SummaryUnit",
+                "SummaryValueKey",
+                "SummeryOrder",
+              ].map((field) => (
                 <TextField
                   key={field}
                   name={field}
                   variant="outlined"
-                  label={field}
+                  label={field == "SummaryValueKey" ? "Decimal" : field}
                   value={formData[field] || ""}
                   onChange={handleInputChange}
                   style={{ width: "47.5%" }}
@@ -532,6 +617,7 @@ const CustomizeColum = ({
             borderTop: "1px solid lightgray",
             width: "100%",
             display: "flex",
+            marginTop: "10px",
           }}
         >
           <div style={{ width: "50%" }}>
@@ -572,7 +658,7 @@ const CustomizeColum = ({
                       fontFamily: "Poppins, sans-serif",
                     }}
                   >
-                    Enter destination report name
+                    Select destination report name
                   </InputLabel>
                   <Select
                     label="Enter destination report name"
@@ -589,6 +675,15 @@ const CustomizeColum = ({
                           maxHeight: 200,
                         },
                       },
+                      anchorOrigin: {
+                        vertical: "top",
+                        horizontal: "left",
+                      },
+                      transformOrigin: {
+                        vertical: "bottom",
+                        horizontal: "left",
+                      },
+                      getContentAnchorEl: null,
                     }}
                   >
                     <MenuItem value={0}>--Select--</MenuItem>
@@ -649,6 +744,15 @@ const CustomizeColum = ({
                       maxHeight: 200,
                     },
                   },
+                  anchorOrigin: {
+                    vertical: "top",
+                    horizontal: "left",
+                  },
+                  transformOrigin: {
+                    vertical: "bottom",
+                    horizontal: "left",
+                  },
+                  getContentAnchorEl: null,
                 }}
               >
                 <MenuItem value="">--Select--</MenuItem>

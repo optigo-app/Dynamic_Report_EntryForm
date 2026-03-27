@@ -14,12 +14,13 @@ const SpList = () => {
   const [spList, setSpList] = useState([]);
   const [search, setSearch] = useState("");
   const location = useLocation();
+  const clientIpAddress = sessionStorage.getItem("clientIpAddress");
 
   const getSpData = async () => {
     setLoading(true);
     let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
     const body = {
-      con: `{"id": "", "mode": "getSpNameList", "appuserid": "${AllData?.LUId}"}`,
+      con: `{"id": "", "mode": "getSpNameList", "appuserid": "${AllData?.LUId}","IPAddress": "${clientIpAddress}"}`,
       p: "{}",
       f: "DynamicReport ( get sp list )",
     };
@@ -36,9 +37,7 @@ const SpList = () => {
 
   const filteredSpList = spList?.filter((sp) => {
     const query = search.toLowerCase();
-    return (
-      sp.SpName?.toLowerCase().includes(query)
-    );
+    return sp.SpName?.toLowerCase().includes(query);
   });
 
   return (

@@ -20,6 +20,7 @@ const GridMain = () => {
   const [searchParams] = useSearchParams();
   const pid = searchParams.get("pid");
   const CN = searchParams.get("CN");
+  const clientIpAddress = sessionStorage.getItem("clientIpAddress");
 
   // useEffect(() => {
   //   Cookies.set(
@@ -57,9 +58,14 @@ const GridMain = () => {
       }
 
       sessionStorage.setItem("reportVarible", JSON.stringify(cookieData));
+      let AllData = JSON.parse(sessionStorage.getItem("reportVarible"));
       if (pid) {
         const body = {
-          con: JSON.stringify({ mode: "getPageId" }),
+          con: JSON.stringify({
+            mode: "getPageId",
+            appuserid: AllData?.LUId,
+            IPAddress: clientIpAddress
+          }),
           p: JSON.stringify({ PageId: pid }),
           f: "DynamicReport (get column data)",
         };
@@ -153,9 +159,6 @@ const GridMain = () => {
 
 export default GridMain;
 
-
-
-
 // // http://localhost:3000/?CN=UkRTRF8yMDI1MTAwNzA0MDgyNF9kZGFmNzIwOGQ4MzY0ODE0YmZiNDE3MDkyNzg0YTdiMQ==&pid=18333
 
 // import React, { useState, useEffect } from "react";
@@ -206,7 +209,6 @@ export default GridMain;
 
 //     try {
 //       const decodedCN = decodeBase64(CN);
-//       console.log("decodedCN", decodedCN);
 //       const cookieData = await readAndDecodeCookie(decodedCN);
 //       if (!cookieData) {
 //         console.error("Cookie not found or invalid.");

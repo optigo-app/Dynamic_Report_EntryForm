@@ -9,6 +9,26 @@
     height: 80vh;
     overflow: auto;
 
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    /* remove track */
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* purple thumb only */
+    &::-webkit-scrollbar-thumb {
+      background-color: #776cf0;
+      border-radius: 10px;
+      border: none;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: #5b52d6;
+    }
+
     .customize_colum_input {
       font-family: $fontFamily;
       .MuiInputBase-input {
